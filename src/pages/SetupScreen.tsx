@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { createLogger } from '../utils/logger';
+import ResumeScannerPage from './ResumeScannerPage';
 import type { UserProfile } from '../types';
 
 const logger = createLogger('setup-screen');
@@ -39,6 +40,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
   const [skills, setSkills] = useState<string[]>(initialProfile?.skills || []);
   const [customSkill, setCustomSkill] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showResumScanner, setShowResumScanner] = useState(false);
 
   const addSkill = (skill: string) => {
     const trimmed = skill.trim();
@@ -138,6 +140,20 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
               }}
               error={errors.email}
             />
+          </div>
+
+          <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <label style={{ display: 'block', fontSize: 'clamp(14px, 4vw, 16px)', fontWeight: 'bold', marginBottom: '12px', color: '#111' }}>📄 Resume (Optional)</label>
+            <p style={{ fontSize: 'clamp(13px, 3vw, 14px)', color: '#666', marginBottom: '16px' }}>Upload your resume to get AI analysis and better interview questions tailored to your experience.</p>
+            <Button
+              type="button"
+              onClick={() => setShowResumScanner(true)}
+              variant="outline"
+              size="lg"
+              style={{ width: '100%' }}
+            >
+              📤 Upload & Analyze Resume
+            </Button>
           </div>
 
           <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
@@ -285,8 +301,17 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {showResumScanner && (
+        <ResumeScannerPage
+          onClose={() => setShowResumScanner(false)}
+          onAnalyzed={(analysis) => {
+            // Auto-add detected skills to profile
+            const newSkills = [...new Set([...skills, ...analysis.skills])];
+            setSkills(newSkills.slice(0, 20)); // Max 20 skills
+          }}
+        />
+      )}
     </div>
   );
 };
-
-export default SetupScreen;

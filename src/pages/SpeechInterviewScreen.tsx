@@ -28,6 +28,7 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
   const [interimTranscript, setInterimTranscript] = useState<string>('');
   const [isQuestionPlaying, setIsQuestionPlaying] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const questionPlayedRef = useRef<boolean>(false);
 
   const currentQuestionIndex = session.questions.length - 1;
   const currentQuestion = session.questions[currentQuestionIndex];
@@ -38,7 +39,6 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
   // Initialize camera on component mount
   useEffect(() => {
     if (!currentQuestion) {
-      console.log('attachCamera: Waiting for currentQuestion before attaching camera');
       return; // Don't attach camera until we have a question (and video is rendered)
     }
 
@@ -53,47 +53,33 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
     };
 
     const attachCamera = async () => {
-      console.log('attachCamera: Starting camera initialization');
       try {
-        console.log('attachCamera: Waiting for video element...');
         const hasVideoEl = await waitForVideoElement(1000);
         if (!hasVideoEl) {
-          console.error('attachCamera: Video element not found after wait');
           setError('Video element not found');
           return;
         }
 
-        console.log('attachCamera: Checking videoRef.current', videoRef.current);
         if (!videoRef.current) {
-          console.error('attachCamera: Video element not found');
           setError('Video element not found');
           return;
         }
 
-        console.log('attachCamera: Requesting user media');
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
         });
-        console.log('attachCamera: Stream obtained', stream);
-        console.log('attachCamera: Video tracks:', stream.getVideoTracks());
-        console.log('attachCamera: Video track enabled:', stream.getVideoTracks()[0]?.enabled);
 
         if (!isMounted) {
-          console.log('attachCamera: Component unmounted, stopping stream');
           stream.getTracks().forEach(track => track.stop());
           return;
         }
 
-        console.log('attachCamera: Setting srcObject on video element');
         videoRef.current.srcObject = stream;
         videoRef.current.load(); // Load the new stream
-        console.log('attachCamera: srcObject set, video element:', videoRef.current);
-        console.log('attachCamera: Video element srcObject:', videoRef.current.srcObject);
 
         // Add stream event listeners
         stream.addEventListener('inactive', () => {
-          console.log('Stream became inactive, attempting to reconnect');
           setIsCameraReady(false);
           setError('Camera disconnected, reconnecting...');
           // Try to reconnect after a short delay
@@ -106,7 +92,6 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
           videoTrack.addEventListener('ended', () => {
-            console.log('Video track ended, attempting to reconnect');
             setIsCameraReady(false);
             setError('Camera track ended, reconnecting...');
             // Try to reconnect after a short delay
@@ -114,47 +99,23 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
               if (isMounted) attachCamera();
             }, 1000);
           });
-          videoTrack.onmute = () => console.log('Video track muted');
-          videoTrack.onunmute = () => console.log('Video track unmuted');
         }
 
         // Explicitly play the video
         try {
           await videoRef.current.play();
-          console.log('attachCamera: Video play() called successfully');
-          console.log('attachCamera: Video paused after play:', videoRef.current.paused);
-          console.log('attachCamera: Video readyState:', videoRef.current.readyState);
-          console.log('attachCamera: Video videoWidth:', videoRef.current.videoWidth);
-          console.log('attachCamera: Video videoHeight:', videoRef.current.videoHeight);
 
           // Check if video has dimensions
           if (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0) {
-            console.error('attachCamera: Video has no dimensions, camera not providing feed');
             setError('Camera not providing video feed');
             return;
           }
         } catch (playError) {
-          console.error('attachCamera: Video play() failed', playError);
+          // Video play failed - continue anyway
         }
 
-        // Add event listeners for debugging
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video: loadedmetadata event fired');
-        };
-        videoRef.current.oncanplay = () => {
-          console.log('Video: canplay event fired');
-        };
-        videoRef.current.onplay = () => {
-          console.log('Video: play event fired');
-        };
-        videoRef.current.onerror = (e) => {
-          console.error('Video: error event fired', e);
-        };
-
         setIsCameraReady(true);
-        console.log('attachCamera: Camera ready set to true');
       } catch (err) {
-        console.error('attachCamera: Camera error:', err);
         setError('Camera not available');
       }
     };
@@ -168,10 +129,7 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
       speechService.stopListening();
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => {
-          console.log('Cleanup: Stopping camera track:', track.kind);
-          track.stop();
-        });
+        stream.getTracks().forEach(track => track.stop());
         videoRef.current.srcObject = null;
       }
     };
@@ -180,17 +138,13 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
   // Cleanup on component unmount (when exiting interview)
   useEffect(() => {
     return () => {
-      console.log('SpeechInterviewScreen: Component unmounting, cleaning up all resources');
       // Stop all speech and audio
       speechService.cancelSpeech();
       speechService.stopListening();
       // Stop all camera tracks
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => {
-          console.log('Final cleanup: Stopping track:', track.kind);
-          track.stop();
-        });
+        stream.getTracks().forEach(track => track.stop());
         videoRef.current.srcObject = null;
       }
     };
@@ -202,23 +156,37 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
     setInterimTranscript('');
     setError('');
     setIsListening(false);
+    // Reset flag when question index changes
+    questionPlayedRef.current = false;
     speechService.cancelSpeech();
-  }, [currentQuestionIndex, currentQuestion?.qText]);
+  }, [currentQuestionIndex]);
 
-  // Play question on load
+  // Play question on load - only play once per question
   useEffect(() => {
-    if (currentQuestion && !isCodingQuestion && !isQuestionPlaying) {
-      playQuestion();
+    // Skip if already played or conditions not met
+    if (questionPlayedRef.current) {
+      return;
     }
-  }, [currentQuestion?.qText, isCodingQuestion]);
+
+    if (!currentQuestion || isCodingQuestion || isQuestionPlaying) {
+      return;
+    }
+
+    questionPlayedRef.current = true;
+    playQuestion();
+  }, [currentQuestionIndex]);
 
   const playQuestion = async () => {
     try {
+      // Cancel any previous speech before starting new one
+      speechService.cancelSpeech();
       setIsQuestionPlaying(true);
       setError('');
       await speechService.speak(currentQuestion.qText);
       // Auto-start listening after question finishes
-      setTimeout(() => startListening(), 500);
+      setTimeout(() => {
+        startListening();
+      }, 500);
     } catch (err) {
       setError('Failed to play question. Please try again.');
     } finally {
@@ -357,7 +325,7 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
             <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'white', position: 'relative' }}>
               {/* Professional Interviewer Avatar */}
               <div style={{ marginBottom: '20px', position: 'relative' }}>
-                <svg width="clamp(80, 15vw, 120)" height="clamp(80, 15vw, 120)" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="100" height="100" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: 'clamp(80px, 15vw, 120px)', height: 'auto' }}>
                   {/* Background circle */}
                   <circle cx="60" cy="60" r="60" fill="rgba(255,255,255,0.1)"/>
                   

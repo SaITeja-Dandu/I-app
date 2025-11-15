@@ -11,10 +11,11 @@
   },
   "dependencies": {
     "axios": "^1.13.2",
-    "elevenlabs": "^1.59.0",
     "firebase": "^12.6.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.553.0",
+    "mammoth": "^1.11.0",
+    "pdfjs-dist": "^5.4.394",
     "pino": "^10.1.0",
     "pino-pretty": "^13.1.2",
     "react": "^19.2.0",

@@ -36,6 +36,13 @@ export const useInterview = (userProfile: UserProfile | null, userId: string | n
     try {
       sessionStartTime.current = Date.now();
 
+      // First question is always "Introduce Yourself"
+      const firstQuestion: InterviewQuestion = {
+        qText: `Please introduce yourself. Tell us about your background, experience with ${userProfile.skills.slice(0, 2).join(' and ')}, and what you're looking to achieve in this role.`,
+        isCoding: false,
+        category: 'Introduction',
+      };
+
       const newSession: InterviewSession = {
         id: '',
         userId,
@@ -44,32 +51,12 @@ export const useInterview = (userProfile: UserProfile | null, userId: string | n
         date: new Date(),
         score: 0,
         duration: 0,
-        questions: [],
+        questions: [firstQuestion],
         status: 'in-progress',
       };
 
       setCurrentSession(newSession);
-
-      // Generate first question
-      const question = await geminiApiService.generateQuestion(
-        userProfile.role,
-        userProfile.skills,
-        [],
-        0,
-        INTERVIEW_LENGTH
-      );
-
-      const firstQuestion: InterviewQuestion = {
-        qText: question.question,
-        isCoding: question.isCoding,
-        category: question.category,
-      };
-
-      setCurrentSession((prev) =>
-        prev ? { ...prev, questions: [firstQuestion] } : null
-      );
-
-      logger.info('Interview started');
+      logger.info('Interview started with introduction question');
     } catch (err) {
       const appError = handleError(err);
       setError(appError);
@@ -151,7 +138,11 @@ export const useInterview = (userProfile: UserProfile | null, userId: string | n
     setError(null);
 
     try {
-      const askedTopics = currentSession.questions.map((q) => q.category);
+      // Get asked topics, excluding 'Introduction' to prevent duplicates
+      const askedTopics = currentSession.questions
+        .map((q) => q.category)
+        .filter((cat) => cat !== 'Introduction');
+
       const question = await geminiApiService.generateQuestion(
         currentSession.role,
         currentSession.skills,
