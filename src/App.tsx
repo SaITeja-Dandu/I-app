@@ -21,7 +21,7 @@ import {
   getFirestoreService,
 } from './services/firestore';
 import { createLogger } from './utils/logger';
-import type { AlertState, UserProfile, InterviewSession } from './types';
+import type { AlertState, UserProfile } from './types';
 
 const logger = createLogger('app');
 
@@ -30,9 +30,7 @@ type AppScreen = 'loading' | 'setup' | 'lobby' | 'interview' | 'error';
 export const App: React.FC = () => {
   const [screen, setScreen] = useState<AppScreen>('loading');
   const [alert, setAlert] = useState<AlertState | null>(null);
-  const [interviewHistory, setInterviewHistory] = useState<InterviewSession[]>(
-    []
-  );
+  const [interviewHistory, setInterviewHistory] = useState<any[]>([]);
   const [interviewUnsubscribe, setInterviewUnsubscribe] = useState<
     (() => void) | null
   >(null);
@@ -293,10 +291,11 @@ export const App: React.FC = () => {
           <div className="min-h-screen bg-gradient-mesh py-12 px-4">
             <LobbyScreen
               profile={userProfile!}
-
+              history={interviewHistory}
               onStartInterview={handleStartInterview}
               onEditProfile={() => setScreen('setup')}
-              isLoading={isInterviewLoading} history={[]}            />
+              isLoading={isInterviewLoading}
+            />
           </div>
         );
 
