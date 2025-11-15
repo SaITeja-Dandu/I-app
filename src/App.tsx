@@ -10,7 +10,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { Card } from './components/Card';
 import { Button } from './components/Button';
 import { SetupScreen } from './pages/SetupScreen';
-import { LobbyScreen } from './pages/LobbyScreen';
+import LobbyScreen from './pages/LobbyScreen';
 import { SpeechInterviewScreen } from './pages/SpeechInterviewScreen';
 import { FeedbackModal } from './pages/FeedbackModal';
 import { useAuth } from './hooks/useAuth';
@@ -293,11 +293,10 @@ export const App: React.FC = () => {
           <div className="min-h-screen bg-gradient-mesh py-12 px-4">
             <LobbyScreen
               profile={userProfile!}
-              history={interviewHistory}
+
               onStartInterview={handleStartInterview}
               onEditProfile={() => setScreen('setup')}
-              isLoading={isInterviewLoading}
-            />
+              isLoading={isInterviewLoading} history={[]}            />
           </div>
         );
 

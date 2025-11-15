@@ -37,11 +37,32 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
 
   // Initialize camera on component mount
   useEffect(() => {
+    if (!currentQuestion) {
+      console.log('attachCamera: Waiting for currentQuestion before attaching camera');
+      return; // Don't attach camera until we have a question (and video is rendered)
+    }
+
     let isMounted = true;
+
+    const waitForVideoElement = async (timeout = 1000): Promise<boolean> => {
+      const start = Date.now();
+      while (isMounted && !videoRef.current && Date.now() - start < timeout) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      return Boolean(videoRef.current);
+    };
 
     const attachCamera = async () => {
       console.log('attachCamera: Starting camera initialization');
       try {
+        console.log('attachCamera: Waiting for video element...');
+        const hasVideoEl = await waitForVideoElement(1000);
+        if (!hasVideoEl) {
+          console.error('attachCamera: Video element not found after wait');
+          setError('Video element not found');
+          return;
+        }
+
         console.log('attachCamera: Checking videoRef.current', videoRef.current);
         if (!videoRef.current) {
           console.error('attachCamera: Video element not found');
@@ -142,8 +163,35 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
 
     return () => {
       isMounted = false;
+      // Stop all speech and listening when component unmounts or question changes
+      speechService.cancelSpeech();
+      speechService.stopListening();
       if (videoRef.current?.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => {
+          console.log('Cleanup: Stopping camera track:', track.kind);
+          track.stop();
+        });
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [currentQuestion]);
+
+  // Cleanup on component unmount (when exiting interview)
+  useEffect(() => {
+    return () => {
+      console.log('SpeechInterviewScreen: Component unmounting, cleaning up all resources');
+      // Stop all speech and audio
+      speechService.cancelSpeech();
+      speechService.stopListening();
+      // Stop all camera tracks
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => {
+          console.log('Final cleanup: Stopping track:', track.kind);
+          track.stop();
+        });
+        videoRef.current.srcObject = null;
       }
     };
   }, []);
@@ -270,37 +318,46 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         zIndex: 50
       }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0066cc', letterSpacing: '-0.5px' }}>InterviewAI</div>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(12px, 3vw, 16px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '200px' }}>
+            <div style={{ fontSize: 'clamp(18px, 5vw, 24px)', fontWeight: 'bold', color: '#0066cc', letterSpacing: '-0.5px' }}>InterviewAI</div>
             <div style={{ height: '24px', width: '1px', background: '#e5e7eb' }}></div>
-            <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>{session.role}</div>
+            <div style={{ fontSize: 'clamp(12px, 3vw, 14px)', color: '#666', fontWeight: '500' }}>{session.role}</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0f4ff', padding: '8px 16px', borderRadius: '20px', border: '1px solid #d0deff' }}>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0066cc' }}>Q {currentQuestionIndex + 1}/{INTERVIEW_LENGTH}</span>
-              <div style={{ width: '60px', height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 3vw, 24px)', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0f4ff', padding: '8px 12px', borderRadius: '20px', border: '1px solid #d0deff' }}>
+              <span style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '600', color: '#0066cc' }}>Q {currentQuestionIndex + 1}/{INTERVIEW_LENGTH}</span>
+              <div style={{ width: '50px', height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
                 <div style={{ width: `${progress}%`, height: '100%', background: '#0066cc', transition: 'width 0.3s ease' }}></div>
               </div>
             </div>
-            <Button variant="danger" onClick={onExit} disabled={false} size="sm">
-              Exit Interview
+            <Button variant="danger" onClick={() => {
+              // Stop all speech/audio before exiting
+              speechService.cancelSpeech();
+              speechService.stopListening();
+              setIsListening(false);
+              if (videoRef.current?.srcObject) {
+                (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+              }
+              onExit?.();
+            }} disabled={false} size="sm">
+              Exit
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div style={{ padding: '24px' }}>
+      <div style={{ padding: 'clamp(16px, 4vw, 24px)' }}>
         <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
           {/* Video Interview Layout */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px', height: '600px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '16px', marginBottom: '24px', minHeight: 'clamp(300px, 60vw, 600px)' }}>
             {/* AI Interviewer (Left) */}
           <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'white', position: 'relative' }}>
               {/* Professional Interviewer Avatar */}
               <div style={{ marginBottom: '20px', position: 'relative' }}>
-                <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="clamp(80, 15vw, 120)" height="clamp(80, 15vw, 120)" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                   {/* Background circle */}
                   <circle cx="60" cy="60" r="60" fill="rgba(255,255,255,0.1)"/>
                   
@@ -357,9 +414,9 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
               </div>
 
               <div style={{ textAlign: 'center', maxWidth: '80%' }}>
-                <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Sarah Chen</p>
-                <p style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Senior Technical Interviewer</p>
-                <p style={{ fontSize: '12px', opacity: 0.7 }}>
+                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 'bold', marginBottom: '8px' }}>Sarah Chen</p>
+                <p style={{ fontSize: 'clamp(12px, 3vw, 14px)', opacity: 0.9, marginBottom: '4px' }}>Senior Technical Interviewer</p>
+                <p style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', opacity: 0.7 }}>
                   {isQuestionPlaying ? 'Speaking...' : 'Ready to ask'}
                 </p>
               </div>
@@ -489,7 +546,7 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
         </div>
 
         {/* Controls Section */}
-        <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'center', gap: '16px' }}>
+        <div style={{ background: 'white', padding: 'clamp(16px, 4vw, 24px)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
           {!isCodingQuestion && (
             <>
               {!isListening ? (
@@ -520,10 +577,9 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
           </Button>
         </div>
       </div>
-      </div>
-      </div>
+    </div>
 
-      {/* CSS Animations */}
+    {/* CSS Animations */}
       <style>{`
         @keyframes pulse {
           0%, 100% {

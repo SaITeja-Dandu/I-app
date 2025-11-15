@@ -73,12 +73,12 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
   };
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(16px, 4vw, 24px)', background: '#f5f5f5' }}>
       <div style={{ width: '100%', maxWidth: '600px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ marginBottom: '16px', fontSize: '48px' }}>🚀</div>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px', color: '#111' }}>Build Your Profile</h1>
-          <p style={{ fontSize: '16px', color: '#666' }}>Start your AI-powered interview journey</p>
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(24px, 8vw, 40px)' }}>
+          <div style={{ marginBottom: '16px', fontSize: 'clamp(36px, 10vw, 48px)' }}>🚀</div>
+          <h1 style={{ fontSize: 'clamp(24px, 7vw, 32px)', fontWeight: 'bold', marginBottom: '8px', color: '#111' }}>Build Your Profile</h1>
+          <p style={{ fontSize: 'clamp(14px, 4vw, 16px)', color: '#666' }}>Start your AI-powered interview journey</p>
         </div>
 
         {errors.form && (
@@ -89,8 +89,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <label style={{ display: 'block', fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', color: '#111' }}>Professional Role</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+            <label style={{ display: 'block', fontSize: 'clamp(14px, 4vw, 16px)', fontWeight: 'bold', marginBottom: '16px', color: '#111' }}>Professional Role</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(170px, 100%), 1fr))', gap: '12px' }}>
               {ROLES.map((r) => (
                 <button
                   key={r}
@@ -142,8 +142,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
           </div>
 
           <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <label style={{ display: 'block', fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', color: '#111' }}>Technical Skills</label>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: 'clamp(14px, 4vw, 16px)', fontWeight: 'bold', marginBottom: '16px', color: '#111' }}>Technical Skills</label>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <Input
                 type="text"
                 placeholder="Add a skill..."
@@ -199,8 +199,54 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
               <div style={{ padding: '16px', background: '#f9f9f9', borderRadius: '6px', border: '1px solid #e6e6e6', marginBottom: '12px' }}>
                 <p style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '8px' }}>Selected ({skills.length}/20):</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {skills.map((skill) => (
-                    <Badge key={skill} label={skill} variant="primary" size="sm" />
+                  {skills.map((skill, idx) => (
+                    <div
+                      key={skill}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: '#0066cc',
+                        color: 'white',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}
+                    >
+                      <span>{skill}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = skills.filter((_, i) => i !== idx);
+                          setSkills(updated);
+                          setErrors({});
+                        }}
+                        title="Remove skill"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'white',
+                          cursor: 'pointer',
+                          padding: '0',
+                          fontSize: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '18px',
+                          height: '18px',
+                          transition: 'transform 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
