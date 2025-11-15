@@ -31,17 +31,17 @@ export const Input: React.FC<InputProps> = ({
       )}
       <div className="relative">
         {icon && (
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-base">
             {icon}
           </span>
         )}
         <input
           className={`
-            w-full px-6 ${icon ? 'pl-14' : 'pl-6'} py-6
+            w-full px-4 ${icon ? 'pl-10' : 'pl-4'} py-2.5
             border border-gray-300 rounded-lg
             focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent
             transition-all duration-200
-            placeholder-gray-400 text-gray-900 text-lg
+            placeholder-gray-400 text-gray-900 text-base
             ${error ? 'border-red-500 focus:ring-red-600' : ''}
             ${className}
           `}

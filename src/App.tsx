@@ -10,6 +10,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { Card } from './components/Card';
 import { Button } from './components/Button';
 import { SetupScreen } from './pages/SetupScreen';
+import LandingPage from './pages/LandingPage';
 import LobbyScreen from './pages/LobbyScreen';
 import { SpeechInterviewScreen } from './pages/SpeechInterviewScreen';
 import { FeedbackModal } from './pages/FeedbackModal';
@@ -25,10 +26,10 @@ import type { AlertState, UserProfile } from './types';
 
 const logger = createLogger('app');
 
-type AppScreen = 'loading' | 'setup' | 'lobby' | 'interview' | 'error';
+type AppScreen = 'landing' | 'loading' | 'setup' | 'lobby' | 'interview' | 'error';
 
 export const App: React.FC = () => {
-  const [screen, setScreen] = useState<AppScreen>('loading');
+  const [screen, setScreen] = useState<AppScreen>('landing');
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [interviewHistory, setInterviewHistory] = useState<any[]>([]);
   const [interviewUnsubscribe, setInterviewUnsubscribe] = useState<
@@ -244,6 +245,11 @@ export const App: React.FC = () => {
 
   const renderContent = () => {
     switch (screen) {
+      case 'landing':
+        return (
+          <LandingPage onGetStarted={() => setScreen('loading')} />
+        );
+
       case 'error':
         return (
           <div className="flex items-center justify-center min-h-screen bg-gradient-mesh">

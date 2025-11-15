@@ -30,9 +30,9 @@ const variantClasses = {
 };
 
 const sizeClasses = {
-  sm: 'px-6 py-4 text-sm font-semibold rounded-lg',
-  md: 'px-8 py-5 text-base font-semibold rounded-lg',
-  lg: 'px-12 py-6 text-lg font-bold rounded-lg',
+  sm: 'px-4 py-2 text-sm font-semibold rounded-lg',
+  md: 'px-6 py-2.5 text-base font-semibold rounded-lg',
+  lg: 'px-8 py-3 text-lg font-bold rounded-lg',
 };
 
 export const Button: React.FC<ButtonProps> = ({
