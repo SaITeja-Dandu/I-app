@@ -18,7 +18,7 @@ import type {
 
 const logger = createLogger('useInterview');
 
-export const useInterview = (userProfile: UserProfile | null, userId: string | null) => {
+export const useInterview = (userProfile: UserProfile | null, userId: string | null, resumeExperience?: string) => {
   const [currentSession, setCurrentSession] = useState<InterviewSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
@@ -48,6 +48,7 @@ export const useInterview = (userProfile: UserProfile | null, userId: string | n
         userId,
         role: userProfile.role,
         skills: userProfile.skills,
+        resumeExperience,
         date: new Date(),
         score: 0,
         duration: 0,
@@ -65,7 +66,7 @@ export const useInterview = (userProfile: UserProfile | null, userId: string | n
     } finally {
       setIsLoading(false);
     }
-  }, [userProfile, userId]);
+  }, [userProfile, userId, resumeExperience]);
 
   const submitAnswer = useCallback(
     async (answer: string) => {
@@ -148,7 +149,8 @@ export const useInterview = (userProfile: UserProfile | null, userId: string | n
         currentSession.skills,
         askedTopics,
         nextIndex,
-        INTERVIEW_LENGTH
+        INTERVIEW_LENGTH,
+        currentSession.resumeExperience
       );
 
       const newQuestion: InterviewQuestion = {

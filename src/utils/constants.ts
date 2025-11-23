@@ -13,11 +13,51 @@ export const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
 export const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const FIRESTORE_PATHS = {
+  APP_ID: 'interview-navigator',
   ARTIFACTS: 'artifacts',
   USERS: 'users',
   PROFILE: 'profile',
   SETTINGS: 'settings',
   INTERVIEWS: 'interviews',
+  BOOKINGS: 'bookings',
+  NOTIFICATIONS: 'notifications',
+  RATINGS: 'ratings',
+  REVIEWS: 'reviews',
+  AVAILABILITY: 'availability',
+} as const;
+
+export const USER_TYPES = {
+  CANDIDATE: 'candidate',
+  INTERVIEWER: 'interviewer',
+} as const;
+
+export const INTERVIEW_TYPES = {
+  AI: 'ai',
+  LIVE: 'live',
+} as const;
+
+export const BOOKING_STATUS = {
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  CONFIRMED: 'confirmed',
+  IN_PROGRESS: 'in-progress',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  NO_SHOW: 'no-show',
+} as const;
+
+export const INTERVIEW_DURATIONS = [30, 45, 60] as const; // minutes
+
+export const NOTIFICATION_TYPES = {
+  BOOKING_REQUEST: 'booking_request',
+  BOOKING_ACCEPTED: 'booking_accepted',
+  BOOKING_CONFIRMED: 'booking_confirmed',
+  BOOKING_CANCELLED: 'booking_cancelled',
+  REMINDER_24H: 'reminder_24h',
+  REMINDER_1H: 'reminder_1h',
+  INTERVIEW_STARTING: 'interview_starting',
+  INTERVIEW_COMPLETED: 'interview_completed',
+  RATING_REQUEST: 'rating_request',
 } as const;
 
 export const ERROR_CODES = {

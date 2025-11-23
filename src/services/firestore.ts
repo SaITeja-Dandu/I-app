@@ -57,6 +57,7 @@ export class FirestoreService {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
+        logger.debug({ userId, data }, 'Profile document retrieved');
         return {
           ...data,
           id: userId,
@@ -65,6 +66,7 @@ export class FirestoreService {
         } as UserProfile;
       }
 
+      logger.warn({ userId }, 'No profile document found for user');
       return null;
     } catch (error) {
       logger.error({ error, userId }, 'Failed to get user profile');
@@ -87,8 +89,10 @@ export class FirestoreService {
 
       // Filter out undefined values - Firestore doesn't allow undefined fields
       const data: Record<string, any> = {
+        uid: userId, // Always save the uid
         role: profile.role,
         skills: profile.skills,
+        userType: profile.userType,
         createdAt: profile.createdAt || new Date(),
         updatedAt: new Date(),
       };
@@ -100,9 +104,27 @@ export class FirestoreService {
       if (profile.resumeUrl) {
         data.resumeUrl = profile.resumeUrl;
       }
+      if (profile.interviewerProfile) {
+        data.interviewerProfile = profile.interviewerProfile;
+      }
 
+      logger.debug({ 
+        userId, 
+        userType: data.userType, 
+        hasEmail: !!data.email,
+        hasResumeUrl: !!data.resumeUrl,
+        hasInterviewerProfile: !!data.interviewerProfile,
+        dataKeys: Object.keys(data)
+      }, 'About to save user profile to Firestore');
+      
       await setDoc(profileRef, data, { merge: true });
-      logger.info({ userId }, 'User profile saved successfully');
+      
+      logger.info({ 
+        userId, 
+        userType: profile.userType, 
+        hasInterviewerProfile: !!profile.interviewerProfile,
+        savedFields: Object.keys(data)
+      }, 'User profile saved successfully');
     } catch (error) {
       logger.error({ error, userId }, 'Failed to save user profile');
       throw new AppError(

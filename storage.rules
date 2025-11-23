@@ -1,0 +1,208 @@
+rules_version = '2';
+
+/**
+ * Firebase Storage Security Rules for Intervuu Platform
+ * 
+ * File Structure:
+ * - /users/{userId}/profile/{fileName} - Profile pictures
+ * - /users/{userId}/resumes/{fileName} - Resume files
+ * - /interviews/{bookingId}/recordings/{fileName} - Interview recordings
+ * - /interviews/{bookingId}/notes/{fileName} - Interview notes
+ * 
+ * Security Principles:
+ * 1. Users can only upload to their own folders
+ * 2. File size limits enforced
+ * 3. File type restrictions (images, PDFs, videos)
+ * 4. Both participants can access interview recordings
+ * 5. Public read access for profile pictures only
+ */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ============================================
+    // Helper Functions
+    // ============================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidImageFile() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+    
+    function isValidPDFFile() {
+      return request.resource.contentType == 'application/pdf' &&
+             request.resource.size < 10 * 1024 * 1024; // 10MB
+    }
+    
+    function isValidVideoFile() {
+      return request.resource.contentType.matches('video/.*') &&
+             request.resource.size < 500 * 1024 * 1024; // 500MB
+    }
+    
+    function isValidDocumentFile() {
+      return (request.resource.contentType == 'application/pdf' ||
+              request.resource.contentType == 'application/msword' ||
+              request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+              request.resource.contentType == 'text/plain') &&
+             request.resource.size < 10 * 1024 * 1024; // 10MB
+    }
+    
+    // ============================================
+    // Profile Pictures
+    // ============================================
+    
+    match /users/{userId}/profile/{fileName} {
+      // Read: Anyone can view profile pictures (public)
+      allow read: if true;
+      
+      // Write: Only owner can upload their profile picture
+      allow write: if isOwner(userId) && isValidImageFile();
+      
+      // Delete: Only owner can delete their profile picture
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // Resumes
+    // ============================================
+    
+    match /users/{userId}/resumes/{fileName} {
+      // Read: Only owner can read their resumes
+      // Interviewers can read during booking (handled via signed URLs in backend)
+      allow read: if isOwner(userId);
+      
+      // Write: Only owner can upload resumes (PDF, DOC, DOCX, TXT)
+      allow write: if isOwner(userId) && isValidDocumentFile();
+      
+      // Delete: Only owner can delete their resumes
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // Portfolios
+    // ============================================
+    
+    match /portfolios/{userId}/{fileName} {
+      // Read: Only owner can read their portfolios
+      allow read: if isOwner(userId);
+      
+      // Write: Only owner can upload portfolios (PDF, Images)
+      allow write: if isOwner(userId) && (isValidPDFFile() || isValidImageFile());
+      
+      // Delete: Only owner can delete their portfolios
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // Certificates
+    // ============================================
+    
+    match /certificates/{userId}/{fileName} {
+      // Read: Only owner can read their certificates
+      allow read: if isOwner(userId);
+      
+      // Write: Only owner can upload certificates (PDF, Images)
+      allow write: if isOwner(userId) && (isValidPDFFile() || isValidImageFile());
+      
+      // Delete: Only owner can delete their certificates
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // Profile Photos (Alternative path for new service)
+    // ============================================
+    
+    match /profile-photos/{userId}/{fileName} {
+      // Read: Anyone authenticated can view profile photos
+      allow read: if isAuthenticated();
+      
+      // Write: Only owner can upload their profile photo
+      allow write: if isOwner(userId) && isValidImageFile();
+      
+      // Delete: Only owner can delete their profile photo
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // Interview Recordings
+    // ============================================
+    
+    match /interviews/{bookingId}/recordings/{fileName} {
+      // Read: Both candidate and interviewer can access recordings
+      // Verification done via Firestore lookup
+      allow read: if isAuthenticated() && (
+        // Check if user is participant in the booking
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.candidateId == request.auth.uid ||
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.interviewerId == request.auth.uid
+      );
+      
+      // Write: Only backend or authorized users can upload recordings
+      allow write: if isAuthenticated() && 
+                      isValidVideoFile() && (
+                        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.candidateId == request.auth.uid ||
+                        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.interviewerId == request.auth.uid
+                      );
+      
+      // Delete: Both participants can delete recordings
+      allow delete: if isAuthenticated() && (
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.candidateId == request.auth.uid ||
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.interviewerId == request.auth.uid
+      );
+    }
+    
+    // ============================================
+    // Interview Notes
+    // ============================================
+    
+    match /interviews/{bookingId}/notes/{fileName} {
+      // Read: Both candidate and interviewer can access notes
+      allow read: if isAuthenticated() && (
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.candidateId == request.auth.uid ||
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.interviewerId == request.auth.uid
+      );
+      
+      // Write: Both participants can upload notes (PDF, DOC, TXT)
+      allow write: if isAuthenticated() && 
+                      isValidDocumentFile() && (
+                        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.candidateId == request.auth.uid ||
+                        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.interviewerId == request.auth.uid
+                      );
+      
+      // Delete: Only owner of the note can delete
+      allow delete: if isAuthenticated() && 
+                       resource.metadata.uploadedBy == request.auth.uid;
+    }
+    
+    // ============================================
+    // Practice Session Recordings
+    // ============================================
+    
+    match /practice/{userId}/sessions/{sessionId}/{fileName} {
+      // Read: Only owner can read their practice recordings
+      allow read: if isOwner(userId);
+      
+      // Write: Only owner can upload their practice recordings
+      allow write: if isOwner(userId) && isValidVideoFile();
+      
+      // Delete: Only owner can delete their practice recordings
+      allow delete: if isOwner(userId);
+    }
+    
+    // ============================================
+    // Default Deny Rule
+    // ============================================
+    
+    // Deny all access to any path not explicitly defined above
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

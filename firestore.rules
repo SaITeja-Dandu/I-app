@@ -1,0 +1,348 @@
+rules_version = '2';
+
+/**
+ * Firebase Security Rules for Intervuu Platform
+ * 
+ * Security Principles:
+ * 1. Users can only access their own data
+ * 2. Candidates can view interviewer profiles
+ * 3. Interviewers can view candidate basic info from bookings
+ * 4. Both parties can access shared booking data
+ * 5. Payment data is read-only from client (written by backend)
+ * 6. Reviews can be created once per booking by candidates
+ * 7. Notifications can only be read/updated by recipient
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // Helper Functions
+    // ============================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isCandidate() {
+      return isAuthenticated() && getUserData().userType == 'candidate';
+    }
+    
+    function isInterviewer() {
+      return isAuthenticated() && getUserData().userType == 'interviewer';
+    }
+    
+    function hasValidUserType() {
+      return request.resource.data.userType in ['candidate', 'interviewer'];
+    }
+    
+    function isBookingParticipant(bookingData) {
+      return request.auth.uid == bookingData.candidateId || 
+             request.auth.uid == bookingData.interviewerId;
+    }
+    
+    // ============================================
+    // Users Collection
+    // ============================================
+    
+    match /users/{userId} {
+      // Read: User can read own profile, or others can read limited public info
+      allow read: if isAuthenticated() && (
+        isOwner(userId) || 
+        // Allow reading interviewer profiles for browsing
+        get(/databases/$(database)/documents/users/$(userId)).data.userType == 'interviewer'
+      );
+      
+      // Create: User can create their own profile during signup
+      allow create: if isOwner(userId) && 
+                       hasValidUserType() &&
+                       request.resource.data.uid == userId &&
+                       request.resource.data.id == userId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Update: User can only update their own profile
+      allow update: if isOwner(userId) &&
+                       // Cannot change uid, id, userType, or createdAt
+                       request.resource.data.uid == resource.data.uid &&
+                       request.resource.data.id == resource.data.id &&
+                       request.resource.data.userType == resource.data.userType &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Delete: Users cannot delete their own profiles (use Firebase Auth)
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // Bookings Collection
+    // ============================================
+    
+    match /bookings/{bookingId} {
+      // Read: Both candidate and interviewer can read booking
+      allow read: if isAuthenticated() && isBookingParticipant(resource.data);
+      
+      // Create: Candidates can create bookings
+      allow create: if isCandidate() &&
+                       request.resource.data.candidateId == request.auth.uid &&
+                       request.resource.data.status == 'pending' &&
+                       request.resource.data.createdAt == request.time &&
+                       request.resource.data.updatedAt == request.time &&
+                       // Ensure required fields exist
+                       request.resource.data.keys().hasAll([
+                         'candidateId', 'candidateName', 'candidateEmail',
+                         'interviewerId', 'interviewerName', 'interviewerEmail',
+                         'type', 'scheduledDateTime', 'durationMinutes',
+                         'timezone', 'status', 'createdAt', 'updatedAt'
+                       ]);
+      
+      // Update: Both parties can update status, but with restrictions
+      allow update: if isAuthenticated() && 
+                       isBookingParticipant(resource.data) &&
+                       request.resource.data.updatedAt == request.time &&
+                       // Cannot change core booking details
+                       request.resource.data.candidateId == resource.data.candidateId &&
+                       request.resource.data.interviewerId == resource.data.interviewerId &&
+                       request.resource.data.scheduledDateTime == resource.data.scheduledDateTime &&
+                       request.resource.data.durationMinutes == resource.data.durationMinutes &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       (
+                         // Candidate can cancel pending/confirmed bookings
+                         (request.auth.uid == resource.data.candidateId &&
+                          resource.data.status in ['pending', 'confirmed'] &&
+                          request.resource.data.status == 'cancelled') ||
+                         // Interviewer can confirm/reject pending bookings
+                         (request.auth.uid == resource.data.interviewerId &&
+                          resource.data.status == 'pending' &&
+                          request.resource.data.status in ['confirmed', 'cancelled']) ||
+                         // Interviewer can mark as completed or no-show
+                         (request.auth.uid == resource.data.interviewerId &&
+                          resource.data.status == 'confirmed' &&
+                          request.resource.data.status in ['completed', 'no-show'])
+                       );
+      
+      // Delete: No one can delete bookings (keep history)
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // Availability Collection
+    // ============================================
+    
+    match /availability/{availabilityId} {
+      // Read: Anyone can read availability for browsing interviewers
+      allow read: if isAuthenticated();
+      
+      // Create: Only interviewers can create their availability
+      allow create: if isInterviewer() &&
+                       request.resource.data.interviewerId == request.auth.uid &&
+                       request.resource.data.createdAt == request.time &&
+                       request.resource.data.updatedAt == request.time &&
+                       // Validate slot structure
+                       request.resource.data.keys().hasAll([
+                         'interviewerId', 'dayOfWeek', 'startTime', 
+                         'endTime', 'timezone', 'isActive'
+                       ]) &&
+                       request.resource.data.dayOfWeek >= 0 &&
+                       request.resource.data.dayOfWeek <= 6 &&
+                       request.resource.data.isActive is bool;
+      
+      // Update: Only owner interviewer can update their availability
+      allow update: if isInterviewer() &&
+                       resource.data.interviewerId == request.auth.uid &&
+                       request.resource.data.interviewerId == resource.data.interviewerId &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Delete: Only owner interviewer can delete their availability
+      allow delete: if isInterviewer() &&
+                       resource.data.interviewerId == request.auth.uid;
+    }
+    
+    // ============================================
+    // Reviews Collection
+    // ============================================
+    
+    match /reviews/{reviewId} {
+      // Read: Anyone can read reviews (public)
+      allow read: if isAuthenticated();
+      
+      // Create: Only candidates can create reviews for completed bookings
+      allow create: if isCandidate() &&
+                       request.resource.data.candidateId == request.auth.uid &&
+                       request.resource.data.createdAt == request.time &&
+                       request.resource.data.updatedAt == request.time &&
+                       // Validate required fields
+                       request.resource.data.keys().hasAll([
+                         'bookingId', 'interviewerId', 'candidateId',
+                         'rating', 'comment', 'createdAt', 'updatedAt'
+                       ]) &&
+                       request.resource.data.rating >= 1 &&
+                       request.resource.data.rating <= 5 &&
+                       // Verify booking exists and is completed
+                       exists(/databases/$(database)/documents/bookings/$(request.resource.data.bookingId)) &&
+                       get(/databases/$(database)/documents/bookings/$(request.resource.data.bookingId)).data.status == 'completed' &&
+                       get(/databases/$(database)/documents/bookings/$(request.resource.data.bookingId)).data.candidateId == request.auth.uid;
+      
+      // Update: Cannot update reviews after creation (prevent manipulation)
+      allow update: if false;
+      
+      // Delete: Only review author can delete within 24 hours
+      allow delete: if isCandidate() &&
+                       resource.data.candidateId == request.auth.uid &&
+                       request.time < resource.data.createdAt + duration.value(24, 'h');
+    }
+    
+    // ============================================
+    // Notifications Collection
+    // ============================================
+    
+    match /notifications/{notificationId} {
+      // Read: Only recipient can read their notifications
+      allow read: if isAuthenticated() &&
+                     resource.data.recipientId == request.auth.uid;
+      
+      // Create: Backend or system creates notifications
+      // Users should not directly create notifications
+      allow create: if false;
+      
+      // Update: Only recipient can mark as read
+      allow update: if isAuthenticated() &&
+                       resource.data.recipientId == request.auth.uid &&
+                       request.resource.data.recipientId == resource.data.recipientId &&
+                       // Can only update 'read' and 'readAt' fields
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']) &&
+                       request.resource.data.read is bool;
+      
+      // Delete: Recipients can delete their notifications
+      allow delete: if isAuthenticated() &&
+                       resource.data.recipientId == request.auth.uid;
+    }
+    
+    // ============================================
+    // Payment Transactions Collection
+    // ============================================
+    
+    match /payment_transactions/{transactionId} {
+      // Read: Only transaction participants can read
+      allow read: if isAuthenticated() && (
+                       resource.data.candidateId == request.auth.uid ||
+                       resource.data.interviewerId == request.auth.uid
+                     );
+      
+      // Create: Only backend should create transactions
+      // Client initiates via backend API
+      allow create: if false;
+      
+      // Update: Only backend should update transaction status
+      allow update: if false;
+      
+      // Delete: No one can delete transactions (audit trail)
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // Payouts Collection
+    // ============================================
+    
+    match /payouts/{payoutId} {
+      // Read: Only payout recipient can read
+      allow read: if isAuthenticated() &&
+                     resource.data.interviewerId == request.auth.uid;
+      
+      // Create: Interviewers can request payouts via backend API
+      // Direct creation not allowed
+      allow create: if false;
+      
+      // Update: Only backend should update payout status
+      allow update: if false;
+      
+      // Delete: No one can delete payouts (audit trail)
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // Interview Sessions Collection
+    // ============================================
+    
+    match /interview_sessions/{sessionId} {
+      // Read: Only session owner can read
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+      
+      // Create: Users can create their own practice sessions
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.type == 'practice' &&
+                       request.resource.data.createdAt == request.time &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Update: Only owner can update their session
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Delete: Only owner can delete their session
+      allow delete: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // ============================================
+    // Interviewer Ratings Aggregation Collection
+    // ============================================
+    
+    match /interviewer_ratings/{interviewerId} {
+      // Read: Anyone can read ratings (public)
+      allow read: if isAuthenticated();
+      
+      // Create/Update/Delete: Only backend should manage aggregations
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // Video Meetings Collection
+    // ============================================
+    
+    match /video_meetings/{meetingId} {
+      // Read: Only meeting participants can read
+      allow read: if isAuthenticated() && (
+                       resource.data.candidateId == request.auth.uid ||
+                       resource.data.interviewerId == request.auth.uid
+                     );
+      
+      // Create: Only backend creates video meetings
+      allow create: if false;
+      
+      // Update: Participants can join meeting (update status)
+      allow update: if isAuthenticated() &&
+                       (resource.data.candidateId == request.auth.uid ||
+                        resource.data.interviewerId == request.auth.uid) &&
+                       // Can only update status and participant join times
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['status', 'candidateJoinedAt', 'interviewerJoinedAt', 'updatedAt']);
+      
+      // Delete: No one can delete meeting records
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // Default Deny Rule
+    // ============================================
+    
+    // Deny all access to any collection not explicitly defined above
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

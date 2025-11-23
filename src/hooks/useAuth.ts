@@ -4,7 +4,12 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signOut,
+  signInWithCustomToken,
+  type User,
+} from 'firebase/auth';
 import { createLogger } from '../utils/logger';
 import { handleError } from '../utils/error-handler';
 import { getFirebaseInstances } from '../services/firebase';
@@ -76,6 +81,60 @@ export const useAuth = () => {
     }
   }, []);
 
+  const signup = useCallback(async (email: string, password: string) => {
+    try {
+      const resp = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data?.error || 'Signup failed');
+      }
+
+      const token = data.token;
+      if (!token) throw new Error('No token from signup');
+
+      const { auth } = getFirebaseInstances();
+      await signInWithCustomToken(auth, token);
+      
+      logger.info('User signed up successfully');
+    } catch (err) {
+      const appError = handleError(err);
+      setError(appError);
+      throw appError;
+    }
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data?.error || 'Login failed');
+      }
+
+      const token = data.token;
+      if (!token) throw new Error('No token from login');
+
+      const { auth } = getFirebaseInstances();
+      await signInWithCustomToken(auth, token);
+      
+      logger.info('User logged in successfully');
+    } catch (err) {
+      const appError = handleError(err);
+      setError(appError);
+      throw appError;
+    }
+  }, []);
+
   return {
     user,
     userId,
@@ -83,5 +142,7 @@ export const useAuth = () => {
     isAuthenticated,
     error,
     logout,
+    signup,
+    login,
   };
 };

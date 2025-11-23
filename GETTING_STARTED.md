@@ -1,3 +1,27 @@
+## 🔐 Vercel / Serverless Auth API — Environment Variables
+If you deploy the included serverless API routes (under `api/`) to Vercel you must configure a few environment variables so the endpoints can initialize Firebase Admin and call Identity Toolkit.
+- **FIREBASE_SERVICE_ACCOUNT**: (required) The full JSON contents of a Firebase service account key. Paste the JSON exactly as generated from the Google Cloud Console. Vercel supports multi-line values — paste the JSON as-is.
+- **FIREBASE_API_KEY** or **VITE_FIREBASE_API_KEY**: (required for password login) Your Firebase Web API Key (found in Firebase Console → Project Settings). The `login` API uses the Identity Toolkit endpoint which requires this key.
+How to add these in Vercel:
+1. Go to your Vercel project → Settings → Environment Variables
+2. Add `FIREBASE_SERVICE_ACCOUNT` and paste the service account JSON.
+3. Add `FIREBASE_API_KEY` with your web API key.
+4. Deploy — Vercel will automatically build the frontend and enable the `api/` serverless functions.
+Local development notes:
+- To run functions locally with the Vercel CLI, install the CLI and run `vercel dev`. Provide env vars in a `.env.local` or via your shell before starting.
+Example `.env.local` (do NOT commit this file):
+```
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account", ...}
+VITE_FIREBASE_API_KEY=your_web_api_key_here
+VITE_FIREBASE_API_KEY=your_web_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=yourproject.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=yourproject
+VITE_FIREBASE_APP_ID=1:123:web:abc
+```
+Security recommendations:
+- Keep `FIREBASE_SERVICE_ACCOUNT` private. Do not commit it into source control.
+- Restrict the service account permissions to only the necessary Firebase Admin operations.
+- Consider adding rate-limiting or bot-protection on public auth endpoints.
 # Getting Started - Interview Navigator
 
 Welcome to the Interview Navigator! This guide will help you set up and run the application locally.

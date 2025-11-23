@@ -1,213 +1,228 @@
-# Production Deployment Guide
+# 🚀 Vercel Deployment Guide - Intervuu
 
-## Pre-Deployment Checklist
+## Deployment Steps
 
-### Security
-- [ ] Review Firebase security rules (move from test to production mode)
-- [ ] Enable HTTPS only (Firebase handles this automatically)
-- [ ] Remove all hardcoded secrets
-- [ ] Review environment variable configuration
-- [ ] Enable API key restrictions in Google Cloud Console
+### Step 1: Prepare Environment Variables
 
-### Performance
-- [ ] Run `npm run build` and verify bundle size
-- [ ] Enable gzip compression on hosting
-- [ ] Configure CDN cache headers
-- [ ] Implement lazy loading for components
-- [ ] Set up error tracking (Sentry/LogRocket)
+Create a `.env.production` file in your project root with:
 
-### Reliability
-- [ ] Set up monitoring and alerts
-- [ ] Configure backup strategy for Firestore
-- [ ] Test database recovery procedures
-- [ ] Implement health checks
-- [ ] Set up automated testing in CI/CD
+```env
+# Firebase
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
+VITE_APP_ID=your_app_id
 
-### Compliance
-- [ ] Review data privacy (GDPR/CCPA)
-- [ ] Implement cookie consent if needed
-- [ ] Add terms of service
-- [ ] Document data retention policies
-- [ ] Set up audit logging
+# Backend (for development)
+BACKEND_URL=https://your-app.vercel.app/api
 
-## Firebase Firestore Security Rules
+# Stripe (if using payments)
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+STRIPE_SECRET_KEY=your_stripe_secret_key
 
-Update these rules in Firebase Console:
+# Backend Firebase Admin
+FIREBASE_ADMIN_SDK_KEY=your_firebase_admin_sdk_json_base64_encoded
+```
 
-```javascript
+### Step 2: Add Vercel Config
+
+The `vercel.json` file is already created in the root directory.
+
+### Step 3: Update Vite Config for Production
+
+The vite.config.ts needs an update for production API calls:
+
+```typescript
+// In vite.config.ts
+server: {
+  proxy: {
+    '/api': {
+      target: process.env.NODE_ENV === 'production' 
+        ? 'https://your-app.vercel.app'
+        : 'http://localhost:3001',
+      changeOrigin: true,
+      secure: false,
+    },
+  },
+}
+```
+
+### Step 4: Deploy to Vercel
+
+#### Option A: Using Vercel CLI (Recommended)
+
+```bash
+# Install Vercel CLI globally
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy (from project root)
+vercel --prod
+```
+
+#### Option B: GitHub Integration (Easiest)
+
+1. Push code to GitHub:
+   ```bash
+   git add .
+   git commit -m "Add Vercel configuration and API handlers"
+   git push origin main
+   ```
+
+2. Go to [vercel.com](https://vercel.com)
+3. Click "Import Project"
+4. Select your GitHub repository
+5. In "Environment Variables" section, add:
+   - All Firebase variables
+   - Stripe keys
+   - Firebase Admin SDK
+6. Click "Deploy"
+
+### Step 5: Configure Vercel Project Settings
+
+In Vercel Dashboard:
+
+1. **Settings → Build & Development Settings**
+   - Build Command: `npm run build && cd backend && npm install && npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install && cd backend && npm install`
+
+2. **Settings → Environment Variables**
+   - Add all `.env` variables (select "Production" for prod deploy)
+
+3. **Settings → Functions**
+   - Memory: 1024 MB (for heavy Firebase operations)
+   - Timeout: 60 seconds
+
+4. **Settings → Domains**
+   - Add your custom domain if needed
+
+### Step 6: Update Frontend API Calls
+
+In your React app, update API calls to use the production URL:
+
+```typescript
+// In your services/api calls
+const API_BASE = process.env.VITE_BACKEND_URL || '/api';
+
+// Example:
+const response = await fetch(`${API_BASE}/auth/login`, {
+  method: 'POST',
+  body: JSON.stringify(data),
+});
+```
+
+### Step 7: Update Firebase Security Rules
+
+In Firebase Console:
+1. Go to **Cloud Firestore → Rules**
+2. Update rules to allow requests from your Vercel domain:
+
+```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /artifacts/{appId}/users/{userId} {
-      // Only authenticated users can read/write their own profile
-      match /profile/settings {
-        allow read, write: if request.auth.uid == userId && request.auth != null;
-      }
-      // Only authenticated users can read/write their own interviews
-      match /interviews/{document=**} {
-        allow read, write: if request.auth.uid == userId && request.auth != null;
-        
-        // Validate interview data structure
-        allow create: if request.resource.data.keys().hasAll(['role', 'skills', 'date', 'score', 'status']) &&
-                       request.resource.data.score >= 0 && request.resource.data.score <= 5;
-      }
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
 ```
 
-## Environment Variables for Production
+### Step 8: Configure CORS for Firebase Storage
+
+In your Firebase project, configure CORS for your Vercel domain.
+
+Create a `cors.json` file and run:
 
 ```bash
-# Firebase (get from Firebase Console)
-VITE_FIREBASE_API_KEY=your_production_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-VITE_FIREBASE_APP_ID=1:123456789:web:abc123def456
-
-# Gemini API (from Google AI Studio)
-VITE_GEMINI_API_KEY=your_production_gemini_key
-
-# App Configuration
-VITE_APP_ID=interview-navigator-prod
-NODE_ENV=production
+gsutil cors set cors.json gs://your-firebase-storage-bucket
 ```
 
-## Deployment Platforms
+### Step 9: Monitor Deployment
 
-### Netlify
+Check Vercel Dashboard for:
+- ✅ Build logs
+- ✅ Function logs
+- ✅ Error tracking
+
+View logs:
 ```bash
-# Connect GitHub repo, set build command and publish directory
-Build command: npm run build
-Publish directory: dist
-
-# Set environment variables in Netlify dashboard
+vercel logs <deployment-url>
 ```
 
-### Vercel
+### Step 10: Test in Production
+
+1. Visit: `https://your-app.vercel.app`
+2. Test login/signup
+3. Test API calls in browser DevTools Console
+4. Check Vercel function logs for errors
+
+## Troubleshooting
+
+### Issue: "API calls not reaching backend"
+**Solution**: Ensure `VITE_BACKEND_URL` is set correctly in Vercel env vars
+
+### Issue: "Firebase auth failing"
+**Solution**: Check Firebase security rules and CORS settings
+
+### Issue: "Build failing"
+**Solution**: Check build logs in Vercel Dashboard
 ```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel --prod
-
-# Set environment variables in Vercel dashboard
+vercel logs <url> --follow
 ```
 
-### Firebase Hosting
+### Issue: "Functions timeout"
+**Solution**: Increase timeout in Vercel settings (up to 60 seconds on Pro plan)
+
+## Development vs Production
+
+### Local Development
 ```bash
-# Install Firebase CLI
-npm install -g firebase-tools
+# Terminal 1: Frontend
+npm run dev
 
-# Login
-firebase login
-
-# Deploy
-npm run build
-firebase deploy
-
-# Configure hosting in firebase.json
+# Terminal 2: Backend
+npm run dev:api
 ```
 
-## Monitoring & Observability
+### Production (Vercel)
+- Frontend: Automatically served by Vercel
+- Backend: Runs as Vercel Functions (serverless)
 
-### Error Tracking Setup
-```javascript
-// Add to main.tsx for production
-import * as Sentry from "@sentry/react";
+## Environment Variables Checklist
 
-Sentry.init({
-  dsn: "your-sentry-dsn",
-  environment: "production",
-  tracesSampleRate: 0.1,
-});
-```
-
-### Analytics Setup
-```javascript
-// Add Google Analytics
-<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-```
-
-## Performance Optimization
-
-### Build Analysis
-```bash
-# Analyze bundle size
-npm run build -- --analyze
-
-# Optimize large dependencies
-npm install webpack-bundle-analyzer --save-dev
-```
-
-### Image Optimization
-- Use WebP format where possible
-- Implement lazy loading
-- Compress all assets
-
-## Scaling Considerations
-
-### Firestore
-- Current setup handles ~1000 concurrent users
-- For larger scale, consider sharding
-- Monitor Firestore read/write metrics
-
-### Gemini API
-- Current rate limit: Default quotas
-- Request caching to reduce API calls
-- Implement queue system for peak loads
-
-### Frontend
-- Consider implementing service workers for offline support
-- Implement request debouncing
-- Cache API responses with React Query
-
-## CI/CD Pipeline
-
-Example GitHub Actions workflow:
-
-```yaml
-name: Deploy to Production
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test
-      - run: npm run build
-      - name: Deploy
-        run: npm run deploy
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-```
+- [ ] `VITE_FIREBASE_*` variables set in Vercel
+- [ ] `VITE_BACKEND_URL` points to your Vercel domain
+- [ ] Firebase Admin SDK key base64 encoded
+- [ ] Stripe keys configured (if using payments)
+- [ ] CORS origins updated in backend
+- [ ] Firebase CORS configured for storage bucket
 
 ## Post-Deployment
 
-- [ ] Monitor error logs for first 24 hours
-- [ ] Check performance metrics
-- [ ] Verify all features work in production
-- [ ] Get feedback from early users
-- [ ] Plan for scaling if needed
+1. **Monitor Analytics**: Check Vercel Analytics dashboard
+2. **Set up Error Tracking**: Use Sentry or similar
+3. **Enable Edge Caching**: Configure Vercel caching headers
+4. **Set up CI/CD**: Automatic deployments on push
 
-## Support & Maintenance
+## Rollback
 
-- Weekly: Monitor error rates and user feedback
-- Monthly: Review performance metrics
-- Quarterly: Security audit and dependency updates
-- Annually: Full infrastructure review
+If something breaks:
+```bash
+vercel rollback
+```
 
-For questions or issues, check the main README.md or GitHub Issues.
+Or select a previous deployment in Vercel Dashboard
+
+---
+
+**Need Help?**
+- Vercel Docs: https://vercel.com/docs
+- Firebase Docs: https://firebase.google.com/docs
+- Check Vercel logs: `vercel logs <url> --follow`

@@ -8,6 +8,8 @@ import {
   getAuth,
   signInAnonymously,
   signInWithCustomToken,
+  setPersistence,
+  browserLocalPersistence,
   type Auth,
 } from 'firebase/auth';
 import {
@@ -62,6 +64,9 @@ export const initializeFirebase = async (): Promise<{
     const app = initializeApp(config);
     auth = getAuth(app);
     db = getFirestore(app);
+
+    // Set persistence to LOCAL so users stay logged in across sessions
+    await setPersistence(auth, browserLocalPersistence);
 
     logger.info('Firebase initialized successfully');
 
