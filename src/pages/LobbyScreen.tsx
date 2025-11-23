@@ -31,7 +31,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   isLoading = false,
 }) => {
   const [upcomingBookings, setUpcomingBookings] = useState<InterviewBooking[]>([]);
-  const [isLoadingBookings, setIsLoadingBookings] = useState(true);
 
   // Subscribe to upcoming bookings
   useEffect(() => {
@@ -53,7 +52,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           .slice(0, 3); // Show max 3 upcoming
         
         setUpcomingBookings(upcoming);
-        setIsLoadingBookings(false);
       }
     );
 
@@ -118,7 +116,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               {isLoading ? 'Starting...' : '🚀 Start AI Interview'}
             </Button>
             {profile.userType === 'candidate' && onBookInterview && (
-              <Button variant="success" onClick={onBookInterview} size="md">
+              <Button variant="primary" onClick={onBookInterview} size="md">
                 📅 Book Live Interview
               </Button>
             )}

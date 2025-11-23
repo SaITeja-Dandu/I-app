@@ -9,22 +9,13 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   hoverable?: boolean;
-  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export const Card: React.FC<CardProps> = ({
   children,
   className = '',
   hoverable = false,
-  shadow = 'md',
 }) => {
-  const shadowClasses = {
-    none: '',
-    sm: 'shadow-sm',
-    md: 'shadow-md',
-    lg: 'shadow-lg',
-    xl: 'shadow-xl',
-  };
 
   return (
     <div

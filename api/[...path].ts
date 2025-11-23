@@ -12,7 +12,7 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://intervuu.vercel.app', 'http://localhost:3000'],
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://intervuu.vercel.app', 'http://localhost:3000','https://invyai.vercel.app'],
   credentials: true,
 }));
 app.use(express.json());

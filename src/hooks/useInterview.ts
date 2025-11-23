@@ -46,6 +46,7 @@ export const useInterview = (userProfile: UserProfile | null, userId: string | n
       const newSession: InterviewSession = {
         id: '',
         userId,
+        interviewType: 'ai',
         role: userProfile.role,
         skills: userProfile.skills,
         resumeExperience,
