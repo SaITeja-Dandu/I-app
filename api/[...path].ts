@@ -1,34 +1,18 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+// Vercel serverless handler for API routes
+// This file catches all /api/* routes and returns a message
+// Actual API endpoints are handled by individual files in /api/auth/ etc.
 
-// Import your server setup
-import { setupRoutes } from '../backend/src/server';
+export default function handler(req: any, res: any) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS || 'https://intervuu.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-const app = express();
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-// Middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://intervuu.vercel.app', 'http://localhost:3000','https://invyai.vercel.app'],
-  credentials: true,
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-});
-app.use('/api/', limiter);
-
-// Setup routes
-setupRoutes(app);
-
-// Vercel serverless handler
-export default (req: VercelRequest, res: VercelResponse) => {
-  return app(req, res);
-};
+  // Default API response
+  res.status(404).json({ error: 'API endpoint not found' });
+}
