@@ -521,7 +521,7 @@ export const App: React.FC = () => {
       case 'error':
         return (
           <div className="flex items-center justify-center min-h-screen bg-gradient-mesh">
-            <Card className="p-10 max-w-md text-center animate-scale-in" shadow="xl">
+            <Card className="p-10 max-w-md text-center animate-scale-in">
               <div className="text-6xl mb-6">⚠️</div>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
                 Oops! Something went wrong
