@@ -156,7 +156,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               Ready to Ace Your Interview?
             </h2>
             <p className="text-xl text-white/90 mb-8">
-              Join thousands of professionals who have improved their interview performance with InterviewAI.
+              Join thousands of professionals who have improved their interview performance with Intervuu.
             </p>
             <button
               onClick={onGetStarted}
@@ -171,7 +171,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         {/* Footer */}
         <div className="px-6 py-8 bg-white/60 backdrop-blur-sm border-t border-gray-200 text-center">
           <p className="text-gray-600 text-sm">
-            � 2024 InterviewAI. All rights reserved. Practice interviews � Master your skills � Land your dream job.
+            © 2024 Intervuu. All rights reserved. Practice interviews • Master your skills • Land your dream job.
           </p>
         </div>
       </div>

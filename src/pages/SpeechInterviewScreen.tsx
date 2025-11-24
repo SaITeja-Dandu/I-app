@@ -255,7 +255,7 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
         <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0066cc' }}>InterviewAI</div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0066cc' }}>Intervuu</div>
               <div style={{ height: '24px', width: '1px', background: '#e5e7eb' }}></div>
               <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>{session.role}</div>
             </div>
@@ -288,7 +288,7 @@ export const SpeechInterviewScreen: React.FC<SpeechInterviewScreenProps> = ({
       }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(12px, 3vw, 16px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '200px' }}>
-            <div style={{ fontSize: 'clamp(18px, 5vw, 24px)', fontWeight: 'bold', color: '#0066cc', letterSpacing: '-0.5px' }}>InterviewAI</div>
+            <div style={{ fontSize: 'clamp(18px, 5vw, 24px)', fontWeight: 'bold', color: '#0066cc', letterSpacing: '-0.5px' }}>Intervuu</div>
             <div style={{ height: '24px', width: '1px', background: '#e5e7eb' }}></div>
             <div style={{ fontSize: 'clamp(12px, 3vw, 14px)', color: '#666', fontWeight: '500' }}>{session.role}</div>
           </div>

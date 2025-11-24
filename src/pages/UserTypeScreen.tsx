@@ -43,7 +43,7 @@ export const UserTypeScreen: React.FC<UserTypeScreenProps> = ({
           <div className="text-center mb-12">
             <div className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full border border-blue-200">
               <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                ✨ Welcome to InterviewAI
+                ✨ Welcome to Intervuu
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
