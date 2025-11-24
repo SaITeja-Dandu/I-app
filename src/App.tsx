@@ -254,7 +254,7 @@ export const App: React.FC = () => {
     // Interviewer with complete profile - show dashboard
     if (userProfile.userType === 'interviewer' && userProfile.interviewerProfile) {
       // Don't force if already on dashboard or other interviewer screens
-      if (screen !== 'interviewerDashboard' && screen !== 'interviewerAvailability' && screen !== 'interviewerEarnings' && screen !== 'interviewerAnalytics' && screen !== 'messaging' && screen !== 'fileManagement') {
+      if (screen !== 'interviewerDashboard' && screen !== 'interviewerAvailability' && screen !== 'interviewerEarnings' && screen !== 'interviewerAnalytics' && screen !== 'messaging' && screen !== 'fileManagement' && screen !== 'settings' && screen !== 'setup') {
         setScreen('interviewerDashboard');
       }
       return;
@@ -270,7 +270,7 @@ export const App: React.FC = () => {
     }
 
     // Handle specific screen requests
-    if (screen === 'bookInterview' || screen === 'candidateDashboard' || screen === 'interviewerDashboard' || screen === 'interviewerAvailability' || screen === 'interviewerEarnings' || screen === 'interviewerAnalytics' || screen === 'submitReview' || screen === 'savedInterviewers' || screen === 'interviewHistory' || screen === 'settings' || screen === 'messaging') {
+    if (screen === 'bookInterview' || screen === 'candidateDashboard' || screen === 'interviewerDashboard' || screen === 'interviewerAvailability' || screen === 'interviewerEarnings' || screen === 'interviewerAnalytics' || screen === 'submitReview' || screen === 'savedInterviewers' || screen === 'interviewHistory' || screen === 'settings' || screen === 'messaging' || screen === 'setup') {
       // Keep current screen
       return;
     }
@@ -593,24 +593,6 @@ export const App: React.FC = () => {
                 isLoading={isInterviewLoading}
                 initialProfile={userProfile || undefined}
                 onResumeAnalyzed={setResumeExperience}
-                onSignOut={async () => {
-                  try {
-                    await logout();
-                    setUserProfile(null);
-                    setInterviewHistory([]);
-                    setHasViewedLanding(false);
-                    setIsLoadingProfile(true);
-                    if (interviewUnsubscribe) {
-                      interviewUnsubscribe();
-                      setInterviewUnsubscribe(null);
-                    }
-                    abandonInterview();
-                    setScreen('landing');
-                    showAlert({ message: 'Signed out successfully', type: 'info' });
-                  } catch (err) {
-                    showAlert({ message: 'Failed to sign out', type: 'error' });
-                  }
-                }}
               />
             </div>
           </Suspense>
@@ -625,7 +607,13 @@ export const App: React.FC = () => {
               onStartInterview={handleStartInterview}
               onEditProfile={() => setScreen('setup')}
               onBookInterview={() => setScreen('bookInterview')}
-              onViewDashboard={() => setScreen('interviewerDashboard')}
+              onViewDashboard={() => {
+                if (userProfile?.userType === 'interviewer') {
+                  setScreen('interviewerDashboard');
+                } else {
+                  setScreen('candidateDashboard');
+                }
+              }}
               isLoading={isInterviewLoading}
             />
           </Suspense>
@@ -672,7 +660,7 @@ export const App: React.FC = () => {
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gradient-mesh"><LoadingSpinner message="Loading..." size="lg" /></div>}>
             <SavedInterviewersScreen
               currentUser={userProfile!}
-              onBack={() => setScreen('candidateDashboard')}
+              onBack={() => setScreen('lobby')}
               onBookInterview={(_interviewerId) => {
                 // Navigate to book interview with pre-selected interviewer
                 setScreen('bookInterview');
@@ -686,7 +674,7 @@ export const App: React.FC = () => {
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gradient-mesh"><LoadingSpinner message="Loading..." size="lg" /></div>}>
             <InterviewHistoryScreen
               currentUser={userProfile!}
-              onBack={() => setScreen('candidateDashboard')}
+              onBack={() => setScreen('lobby')}
               onRateInterview={(bookingId) => {
                 // Get booking details and navigate to review screen
                 setReviewBookingId(bookingId);
@@ -785,7 +773,7 @@ export const App: React.FC = () => {
                 if (userProfile?.role === 'interviewer') {
                   setScreen('interviewerDashboard');
                 } else {
-                  setScreen('candidateDashboard');
+                  setScreen('lobby');
                 }
               }}
             />
@@ -811,7 +799,7 @@ export const App: React.FC = () => {
                 if (userProfile?.role === 'interviewer') {
                   setScreen('interviewerDashboard');
                 } else {
-                  setScreen('candidateDashboard');
+                  setScreen('lobby');
                 }
               }}
             />
@@ -879,24 +867,33 @@ export const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-mesh">
+      <div className="min-h-screen bg-gradient-mesh overflow-x-hidden">
         {/* Header */}
-        {isAuthReady && userId && screen !== 'error' && screen !== 'loading' && screen !== 'setup' && screen !== 'welcome' && screen !== 'userType' && screen !== 'interviewerSetup' && (
-          <div className="bg-white/70 backdrop-blur-lg border-b border-white/20 shadow-sm px-6 py-2 sticky top-0 z-40">
+        {isAuthReady && userId && screen !== 'error' && screen !== 'loading' && screen !== 'welcome' && screen !== 'userType' && screen !== 'interviewerSetup' && (
+          <div className="bg-white/70 backdrop-blur-lg border-b border-white/20 shadow-sm px-3 sm:px-6 py-2 sticky top-0 z-40">
             <div className="max-w-7xl mx-auto flex justify-between items-center">
-              <Logo size="medium" variant="horizontal" className="cursor-pointer" onClick={() => {
+              <Logo size="small" variant="horizontal" className="cursor-pointer sm:hidden" onClick={() => {
                 if (userProfile?.userType === 'interviewer') {
                   setScreen('interviewerDashboard');
                 } else {
-                  setScreen('candidateDashboard');
+                  setScreen('lobby');
+                }
+              }} />
+              
+              {/* Desktop Logo */}
+              <Logo size="medium" variant="horizontal" className="cursor-pointer hidden sm:flex" onClick={() => {
+                if (userProfile?.userType === 'interviewer') {
+                  setScreen('interviewerDashboard');
+                } else {
+                  setScreen('lobby');
                 }
               }} />
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 sm:gap-3">
                 {isInterviewLoading && (
-                  <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 px-3 py-2 rounded-full border border-blue-200">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 px-2 sm:px-3 py-1 sm:py-2 rounded-full border border-blue-200">
                     <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full animate-pulse" />
-                    <span className="text-xs font-semibold text-gray-700">Processing...</span>
+                    <span className="text-xs font-semibold text-gray-700 hidden sm:inline">Processing...</span>
                   </div>
                 )}
 
@@ -906,7 +903,7 @@ export const App: React.FC = () => {
                 {/* Messaging Icon */}
                 <button
                   onClick={() => setScreen('messaging')}
-                  className="px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-all duration-200 relative"
+                  className="px-2 sm:px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-all duration-200 relative"
                   title="Messages"
                 >
                   💬
@@ -915,7 +912,7 @@ export const App: React.FC = () => {
                 {/* Settings Button */}
                 <button
                   onClick={() => setScreen('settings')}
-                  className="px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                  className="px-2 sm:px-3 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-all duration-200"
                   title="Settings"
                 >
                   ⚙️
@@ -941,9 +938,10 @@ export const App: React.FC = () => {
                       showAlert({ message: 'Failed to sign out', type: 'error' });
                     }
                   }}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                 >
-                  Sign Out
+                  <span className="hidden sm:inline">Sign Out</span>
+                  <span className="sm:hidden">Exit</span>
                 </button>
               </div>
             </div>

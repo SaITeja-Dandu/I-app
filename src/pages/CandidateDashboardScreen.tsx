@@ -123,12 +123,6 @@ export const CandidateDashboardScreen: React.FC<CandidateDashboardScreenProps> =
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <button
-            onClick={onBack}
-            className="mb-4 text-gray-600 hover:text-gray-800 flex items-center gap-2 transition-colors"
-          >
-            ← Back to Lobby
-          </button>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               My Interview Schedule
@@ -172,17 +166,17 @@ export const CandidateDashboardScreen: React.FC<CandidateDashboardScreenProps> =
 
         {/* Quick Actions */}
         {(onViewSavedInterviewers || onViewHistory || onManageFiles) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {onViewSavedInterviewers && (
               <button
                 onClick={onViewSavedInterviewers}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 text-left"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 text-left"
               >
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">⭐</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Saved Interviewers</h3>
-                    <p className="text-sm text-gray-600">View your favorite interviewers</p>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-4xl flex-shrink-0">⭐</div>
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-1 truncate">Saved Interviewers</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">View your favorite interviewers</p>
                   </div>
                 </div>
               </button>
@@ -191,13 +185,13 @@ export const CandidateDashboardScreen: React.FC<CandidateDashboardScreenProps> =
             {onViewHistory && (
               <button
                 onClick={onViewHistory}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 text-left"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 text-left"
               >
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">📚</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Interview History</h3>
-                    <p className="text-sm text-gray-600">Review past interviews and ratings</p>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-4xl flex-shrink-0">📚</div>
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-1 truncate">Interview History</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Review past interviews and ratings</p>
                   </div>
                 </div>
               </button>
@@ -206,13 +200,13 @@ export const CandidateDashboardScreen: React.FC<CandidateDashboardScreenProps> =
             {onManageFiles && (
               <button
                 onClick={onManageFiles}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 text-left"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20 hover:shadow-xl hover:scale-105 transition-all duration-300 text-left"
               >
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">📁</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Manage Files</h3>
-                    <p className="text-sm text-gray-600">Upload and manage your documents</p>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-4xl flex-shrink-0">📁</div>
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-1 truncate">Manage Files</h3>
+                    <p className="text-xs sm:text-sm text-gray-600">Upload and manage your documents</p>
                   </div>
                 </div>
               </button>
@@ -221,13 +215,13 @@ export const CandidateDashboardScreen: React.FC<CandidateDashboardScreenProps> =
         )}
 
         {/* Tabs */}
-        <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-2 inline-flex gap-2">
+        <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-1 sm:p-2 inline-flex gap-1 sm:gap-2 overflow-x-auto w-full sm:w-auto">
           {(['upcoming', 'completed', 'all'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`
-                px-6 py-3 rounded-xl font-semibold transition-all duration-300 capitalize
+                px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 capitalize whitespace-nowrap
                 ${
                   activeTab === tab
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
@@ -313,17 +307,17 @@ export const CandidateDashboardScreen: React.FC<CandidateDashboardScreenProps> =
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-2 sm:gap-3">
                       <button
                         onClick={() => setSelectedBooking(booking)}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700 transition-colors"
+                        className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700 transition-colors"
                       >
                         View Details
                       </button>
                       {booking.status === 'completed' && booking.interviewerId && onSubmitReview && (
                         <button
                           onClick={() => onSubmitReview(booking.id, booking.interviewerId!, booking.interviewerName || 'Interviewer')}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium text-white transition-colors"
+                          className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 hover:bg-blue-700 rounded-lg font-medium text-white transition-colors"
                         >
                           Write Review
                         </button>

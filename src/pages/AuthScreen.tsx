@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { Logo } from '../components/Logo';
 import type { UserType } from '../types';
 
 interface AuthScreenProps {
@@ -121,13 +122,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
 
         {/* Logo/Brand Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
-            <span className="text-3xl">🎯</span>
+          <div className="flex justify-center mb-4">
+            <Logo size="large" variant="full" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Intervuu
-          </h1>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-base mt-4">
             Master your interviews with AI-powered practice
           </p>
         </div>

@@ -203,19 +203,8 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  logger.info({}, 'Back to lobby clicked');
-                  onBack();
-                }}
-                className="text-gray-600 hover:text-gray-800 flex items-center gap-2 transition-colors"
-              >
-                ← Back to Lobby
-              </button>
-              <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-4 mb-4">
+              <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
                 {onManageAvailability && (
                   <button
                     type="button"
@@ -224,9 +213,9 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                       logger.info({}, 'Manage availability clicked');
                       onManageAvailability();
                     }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm sm:text-base bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 flex-1 sm:flex-none justify-center"
                   >
-                    📅 Manage Availability
+                    📅 <span className="hidden sm:inline">Manage </span>Availability
                   </button>
                 )}
                 {onViewEarnings && (
@@ -237,9 +226,9 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                       logger.info({}, 'View earnings clicked');
                       onViewEarnings();
                     }}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 flex-1 sm:flex-none justify-center"
                   >
-                    💰 View Earnings
+                    💰 <span className="hidden sm:inline">View </span>Earnings
                   </button>
                 )}
                 {onViewAnalytics && (
@@ -250,9 +239,9 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                       logger.info({}, 'View analytics clicked');
                       onViewAnalytics();
                     }}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm sm:text-base bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 flex-1 sm:flex-none justify-center"
                   >
-                    📊 View Analytics
+                    📊 <span className="hidden sm:inline">View </span>Analytics
                   </button>
                 )}
                 {onOpenMessages && (
@@ -263,7 +252,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                       logger.info({}, 'Messages clicked');
                       onOpenMessages();
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 flex-1 sm:flex-none justify-center"
                   >
                     💬 Messages
                   </button>
@@ -276,59 +265,59 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                       logger.info({}, 'Manage files clicked');
                       onManageFiles();
                     }}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm sm:text-base bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2 flex-1 sm:flex-none justify-center"
                   >
-                    📁 Manage Files
+                    📁 <span className="hidden sm:inline">Manage </span>Files
                   </button>
                 )}
               </div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Interviewer Dashboard
               </span>
             </h1>
-            <p className="text-xl text-gray-600">Manage your interview requests and schedule</p>
+            <p className="text-base sm:text-xl text-gray-600">Manage your interview requests and schedule</p>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="text-3xl">⏳</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <div className="text-2xl sm:text-3xl">⏳</div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium">Pending Requests</p>
-                  <p className="text-3xl font-bold text-gray-800">{stats.pending}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium">Pending</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.pending}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="text-3xl">📅</div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <div className="text-2xl sm:text-3xl">📅</div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium">Upcoming</p>
-                  <p className="text-3xl font-bold text-gray-800">{stats.upcoming}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium">Upcoming</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.upcoming}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="text-3xl">✅</div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <div className="text-2xl sm:text-3xl">✅</div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium">Completed</p>
-                  <p className="text-3xl font-bold text-gray-800">{stats.completed}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium">Completed</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.completed}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="text-3xl">💰</div>
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-4 sm:p-6 border border-white/20 col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <div className="text-2xl sm:text-3xl">💰</div>
                 <div>
-                  <p className="text-sm text-white/90 font-medium">Total Earnings</p>
-                  <p className="text-3xl font-bold text-white">${stats.totalEarnings}</p>
+                  <p className="text-xs sm:text-sm text-white/90 font-medium">Earnings</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-white">${stats.totalEarnings}</p>
                 </div>
               </div>
             </div>
@@ -336,14 +325,14 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
 
           {/* Tabs */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-            <div className="flex border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row border-b border-gray-200 overflow-x-auto">
               <button
                 onClick={() => {
                   logger.debug({}, 'Switched to pending tab');
                   setActiveTab('pending');
                 }}
                 className={`
-                  flex-1 px-6 py-4 font-semibold transition-all duration-200
+                  flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-200 whitespace-nowrap
                   ${
                     activeTab === 'pending'
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
@@ -351,7 +340,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                   }
                 `}
               >
-                Pending Requests {stats.pending > 0 && `(${stats.pending})`}
+                Pending{stats.pending > 0 && ` (${stats.pending})`}
               </button>
               <button
                 onClick={() => {
@@ -359,7 +348,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                   setActiveTab('upcoming');
                 }}
                 className={`
-                  flex-1 px-6 py-4 font-semibold transition-all duration-200
+                  flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-200 whitespace-nowrap
                   ${
                     activeTab === 'upcoming'
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
@@ -367,7 +356,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                   }
                 `}
               >
-                Upcoming {stats.upcoming > 0 && `(${stats.upcoming})`}
+                Upcoming{stats.upcoming > 0 && ` (${stats.upcoming})`}
               </button>
               <button
                 onClick={() => {
@@ -375,7 +364,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                   setActiveTab('completed');
                 }}
                 className={`
-                  flex-1 px-6 py-4 font-semibold transition-all duration-200
+                  flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all duration-200 whitespace-nowrap
                   ${
                     activeTab === 'completed'
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
@@ -468,19 +457,19 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-col gap-2 md:w-48">
+                        <div className="flex flex-col gap-2 sm:w-48 w-full">
                           {booking.status === BOOKING_STATUS.PENDING && (
                             <>
                               <button
                                 onClick={() => setSelectedBooking(booking)}
-                                className="px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg transition-all duration-200"
+                                className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg transition-all duration-200"
                               >
                                 Review
                               </button>
                               <button
                                 onClick={() => handleDeclineBooking(booking.id)}
                                 disabled={isProcessing}
-                                className="px-4 py-2 rounded-lg font-semibold bg-white text-gray-700 border-2 border-gray-200 hover:border-red-300 hover:text-red-600 transition-all duration-200 disabled:opacity-50"
+                                className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-semibold bg-white text-gray-700 border-2 border-gray-200 hover:border-red-300 hover:text-red-600 transition-all duration-200 disabled:opacity-50"
                               >
                                 Decline
                               </button>
@@ -491,7 +480,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                             <>
                               <button
                                 onClick={() => onStartInterview(booking.id)}
-                                className="px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-green-600 to-green-700 text-white hover:shadow-lg transition-all duration-200"
+                                className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-semibold bg-gradient-to-r from-green-600 to-green-700 text-white hover:shadow-lg transition-all duration-200"
                               >
                                 Start Interview
                               </button>
@@ -500,7 +489,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                                   href={booking.meetingLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-4 py-2 rounded-lg font-semibold text-center bg-white text-blue-600 border-2 border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                                  className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-semibold text-center bg-white text-blue-600 border-2 border-blue-300 hover:bg-blue-50 transition-all duration-200"
                                 >
                                   Meeting Link
                                 </a>
@@ -509,7 +498,7 @@ export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProp
                           )}
 
                           {booking.status === BOOKING_STATUS.COMPLETED && (
-                            <button className="px-4 py-2 rounded-lg font-semibold bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 transition-all duration-200">
+                            <button className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-semibold bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 transition-all duration-200">
                               View Details
                             </button>
                           )}

@@ -400,12 +400,12 @@ export const Logo: React.FC<LogoProps> = ({
   if (variant === 'horizontal') {
     return (
       <div 
-        className={`flex items-center gap-0 ${className}`}
+        className={`flex items-center gap-2 ${className}`}
         {...handleClick}
       >
         <LogoSVG size={pixelSize * 0.6} />
         <span 
-          className="text-2xl font-bold"
+          className="text-2xl font-bold whitespace-nowrap"
           style={{ 
             fontSize: size === 'small' ? '16px' : size === 'medium' ? '20px' : '28px' 
           }}

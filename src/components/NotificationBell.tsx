@@ -148,15 +148,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) =>
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+        <div className="fixed sm:absolute inset-x-4 sm:right-0 sm:left-auto mt-2 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-white font-bold text-lg">Notifications</h3>
+              <h3 className="text-white font-bold text-base sm:text-lg">Notifications</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-white/90 text-sm hover:text-white underline"
+                  className="text-white/90 text-xs sm:text-sm hover:text-white underline"
                 >
                   Mark all read
                 </button>
@@ -167,15 +167,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) =>
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
             {isLoading ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-2" />
-                <p className="text-sm">Loading notifications...</p>
+              <div className="p-6 sm:p-8 text-center text-gray-500">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-xs sm:text-sm">Loading notifications...</p>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <span className="text-5xl mb-3 block">🔕</span>
-                <p className="font-medium">No notifications</p>
-                <p className="text-sm mt-1">You're all caught up!</p>
+              <div className="p-6 sm:p-8 text-center text-gray-500">
+                <span className="text-4xl sm:text-5xl mb-3 block">🔕</span>
+                <p className="font-medium text-sm sm:text-base">No notifications</p>
+                <p className="text-xs sm:text-sm mt-1">You're all caught up!</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -184,27 +184,27 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) =>
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={`
-                      w-full p-4 text-left hover:bg-gray-50 transition-all duration-200
+                      w-full p-3 sm:p-4 text-left hover:bg-gray-50 transition-all duration-200
                       ${!notification.read ? 'bg-blue-50/50' : ''}
                     `}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       {/* Icon */}
-                      <div className="text-2xl flex-shrink-0">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">
                         {getNotificationIcon(notification.type)}
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-semibold text-gray-900 text-sm">
+                          <h4 className="font-semibold text-gray-900 text-xs sm:text-sm">
                             {notification.title}
                           </h4>
                           {!notification.read && (
-                            <span className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />
+                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
                           {notification.message}
                         </p>
                         <div className="flex items-center justify-between mt-2">
@@ -227,14 +227,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userId }) =>
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="p-3 bg-gray-50 border-t border-gray-200">
+            <div className="p-2.5 sm:p-3 bg-gray-50 border-t border-gray-200">
               <button
                 onClick={() => {
                   setIsOpen(false);
                   // TODO: Navigate to notifications page
                   console.log('View all notifications');
                 }}
-                className="w-full text-center text-sm font-semibold text-blue-600 hover:text-blue-700"
+                className="w-full text-center text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700"
               >
                 View all notifications
               </button>

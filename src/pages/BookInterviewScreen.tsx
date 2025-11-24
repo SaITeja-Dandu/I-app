@@ -217,12 +217,6 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <button
-              onClick={onBack}
-              className="mb-4 text-gray-600 hover:text-gray-800 flex items-center gap-2 transition-colors"
-            >
-              ← Back to Lobby
-            </button>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Book a Live Interview

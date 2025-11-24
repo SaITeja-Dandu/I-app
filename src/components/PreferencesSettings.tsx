@@ -151,18 +151,27 @@ export const PreferencesSettings: React.FC<PreferencesSettingsProps> = ({ userId
             </h4>
             <div className="space-y-3">
               {Object.entries(notificationPrefs.email).map(([key, value]) => (
-                <label key={key} className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) =>
-                      setNotificationPrefs({
-                        ...notificationPrefs,
-                        email: { ...notificationPrefs.email, [key]: e.target.checked },
-                      })
-                    }
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
+                <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) =>
+                        setNotificationPrefs({
+                          ...notificationPrefs,
+                          email: { ...notificationPrefs.email, [key]: e.target.checked },
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 flex items-center justify-center group-hover:border-blue-400">
+                      {value && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
                   <span className="text-gray-700 capitalize">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </span>
@@ -179,18 +188,27 @@ export const PreferencesSettings: React.FC<PreferencesSettingsProps> = ({ userId
             </h4>
             <div className="space-y-3">
               {Object.entries(notificationPrefs.push).map(([key, value]) => (
-                <label key={key} className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) =>
-                      setNotificationPrefs({
-                        ...notificationPrefs,
-                        push: { ...notificationPrefs.push, [key]: e.target.checked },
-                      })
-                    }
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
+                <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) =>
+                        setNotificationPrefs({
+                          ...notificationPrefs,
+                          push: { ...notificationPrefs.push, [key]: e.target.checked },
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 flex items-center justify-center group-hover:border-blue-400">
+                      {value && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
                   <span className="text-gray-700 capitalize">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </span>
@@ -206,46 +224,73 @@ export const PreferencesSettings: React.FC<PreferencesSettingsProps> = ({ userId
               Interview Reminders
             </h4>
             <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.reminderTiming.hours24}
-                  onChange={(e) =>
-                    setNotificationPrefs({
-                      ...notificationPrefs,
-                      reminderTiming: { ...notificationPrefs.reminderTiming, hours24: e.target.checked },
-                    })
-                  }
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.reminderTiming.hours24}
+                    onChange={(e) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        reminderTiming: { ...notificationPrefs.reminderTiming, hours24: e.target.checked },
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 flex items-center justify-center group-hover:border-blue-400">
+                    {notificationPrefs.reminderTiming.hours24 && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
                 <span className="text-gray-700">24 hours before</span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.reminderTiming.hours1}
-                  onChange={(e) =>
-                    setNotificationPrefs({
-                      ...notificationPrefs,
-                      reminderTiming: { ...notificationPrefs.reminderTiming, hours1: e.target.checked },
-                    })
-                  }
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.reminderTiming.hours1}
+                    onChange={(e) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        reminderTiming: { ...notificationPrefs.reminderTiming, hours1: e.target.checked },
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 flex items-center justify-center group-hover:border-blue-400">
+                    {notificationPrefs.reminderTiming.hours1 && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
                 <span className="text-gray-700">1 hour before</span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.reminderTiming.minutes15}
-                  onChange={(e) =>
-                    setNotificationPrefs({
-                      ...notificationPrefs,
-                      reminderTiming: { ...notificationPrefs.reminderTiming, minutes15: e.target.checked },
-                    })
-                  }
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.reminderTiming.minutes15}
+                    onChange={(e) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        reminderTiming: { ...notificationPrefs.reminderTiming, minutes15: e.target.checked },
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 flex items-center justify-center group-hover:border-blue-400">
+                    {notificationPrefs.reminderTiming.minutes15 && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
                 <span className="text-gray-700">15 minutes before</span>
               </label>
             </div>

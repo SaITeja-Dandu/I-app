@@ -6,7 +6,6 @@
 import { useState } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Logo } from '../components/Logo';
 import { createLogger } from '../utils/logger';
 import ResumeScannerPage from './ResumeScannerPage';
 import type { UserProfile } from '../types';
@@ -18,7 +17,6 @@ interface SetupScreenProps {
   isLoading?: boolean;
   initialProfile?: UserProfile;
   onResumeAnalyzed?: (experience: string) => void;
-  onSignOut?: () => void;
 }
 
 const ROLES = [
@@ -38,7 +36,6 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
   isLoading = false,
   initialProfile,
   onResumeAnalyzed,
-  onSignOut,
 }) => {
   logger.info({ initialProfile: !!initialProfile }, 'SetupScreen mounted');
   const [userType, setUserType] = useState<'candidate' | 'interviewer' | ''>(initialProfile?.userType || '');
@@ -142,41 +139,21 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
         <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Professional Header */}
-      <div className="relative z-10 bg-white/70 backdrop-blur-lg border-b border-white/20 shadow-sm sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 py-2 flex justify-between items-center">
-          <Logo size="medium" variant="horizontal" />
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full text-xs font-semibold text-blue-600">
-              Step 1 of 2
-            </div>
-            {onSignOut && (
-              <button
-                onClick={onSignOut}
-                className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                Sign Out
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
-      <div className="relative z-10 px-4 py-8 md:py-12 min-h-[calc(100vh-80px)] flex items-center justify-center">
+      <div className="relative z-10 px-4 py-8 md:py-12 min-h-screen flex items-center justify-center">
         <div className="w-full max-w-4xl">
           {/* Hero Section */}
-          <div className="text-center mb-8 md:mb-12">
-            <div className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full border border-blue-200">
-              <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="text-center mb-6 sm:mb-8 md:mb-12">
+            <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full border border-blue-200">
+              <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 ✨ Step 1: Profile Setup
               </span>
             </div>
-            <div className="mb-4 text-6xl">🚀</div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <div className="mb-3 sm:mb-4 text-4xl sm:text-5xl md:text-6xl">🚀</div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent px-4">
               Build Your Profile
             </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed px-4">
               {!userType ? 'Choose your role to get started with Intervuu.' : userType === 'candidate' ? 'Share your professional details to get personalized interview questions.' : 'Tell us about yourself so candidates can learn from your expertise.'}
             </p>
           </div>
@@ -184,20 +161,20 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
           {/* Form Card */}
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border border-white/20">
             {/* Card Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 md:px-8 py-6 text-white">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="text-2xl">{userType === 'interviewer' ? '💼' : '👤'}</div>
-                <h2 className="text-2xl font-bold">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 text-white">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <div className="text-xl sm:text-2xl">{userType === 'interviewer' ? '💼' : '👤'}</div>
+                <h2 className="text-xl sm:text-2xl font-bold">
                   {!userType ? 'Choose Your Role' : userType === 'candidate' ? 'Candidate Profile' : 'Interviewer Profile'}
                 </h2>
               </div>
-              <p className="text-blue-50 text-sm">
+              <p className="text-blue-50 text-xs sm:text-sm">
                 {!userType ? 'Select whether you want to practice or conduct interviews' : userType === 'candidate' ? 'Tell us about your professional background' : 'Share your expertise and availability'}
               </p>
             </div>
 
             {/* Form Content */}
-            <div className="px-6 md:px-8 py-8">
+            <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8">
               {errors.form && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-semibold text-sm flex items-center gap-2">
                   <span className="text-lg">⚠️</span>
