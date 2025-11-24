@@ -98,12 +98,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
-                { icon: '??', title: 'AI-Powered Evaluation', desc: 'Get instant, detailed feedback on your technical answers from our advanced AI interviewer.' },
-                { icon: '??', title: 'Track Your Progress', desc: 'Monitor your improvement over time with detailed analytics and performance metrics.' },
-                { icon: '??', title: 'Personalized Questions', desc: 'Get tailored questions based on your role and skills. Practice exactly what you need.' },
-                { icon: '??', title: 'Real-Time Scoring', desc: 'Understand exactly how you performed with comprehensive scoring and improvement tips.' },
-                { icon: '??', title: 'Practice Anywhere', desc: 'Fully responsive design works seamlessly on desktop, tablet, and mobile devices.' },
-                { icon: '?', title: 'Instant Setup', desc: 'Get started in seconds. No downloads or complex setup required. Just practice.' },
+                { icon: '🤖', title: 'AI-Powered Evaluation', desc: 'Get instant, detailed feedback on your technical answers from our advanced AI interviewer.' },
+                { icon: '📈', title: 'Track Your Progress', desc: 'Monitor your improvement over time with detailed analytics and performance metrics.' },
+                { icon: '🎯', title: 'Personalized Questions', desc: 'Get tailored questions based on your role and skills. Practice exactly what you need.' },
+                { icon: '⚡', title: 'Real-Time Scoring', desc: 'Understand exactly how you performed with comprehensive scoring and improvement tips.' },
+                { icon: '📱', title: 'Practice Anywhere', desc: 'Fully responsive design works seamlessly on desktop, tablet, and mobile devices.' },
+                { icon: '🚀', title: 'Instant Setup', desc: 'Get started in seconds. No downloads or complex setup required. Just practice.' },
               ].map((feature, index) => (
                 <div
                   key={index}
@@ -162,7 +162,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               onClick={onGetStarted}
               className="px-10 py-4 rounded-xl text-lg font-bold bg-white text-blue-600 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
             >
-              ?? Start Free Practice Now
+              🎓 Start Free Practice Now
             </button>
             <p className="mt-6 text-white/80 text-sm">Free forever � No credit card needed</p>
           </div>

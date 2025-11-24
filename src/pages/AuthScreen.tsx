@@ -112,7 +112,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
         {onBackToLanding && (
           <button
             onClick={onBackToLanding}
-            className="absolute -top-16 left-0 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
+            className="mb-4 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
           >
             <span className="text-xl">←</span>
             <span>Back to Home</span>

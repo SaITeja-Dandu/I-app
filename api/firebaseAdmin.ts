@@ -2,15 +2,15 @@ import admin from 'firebase-admin';
 
 /**
  * Helper to initialize Firebase Admin SDK in serverless environment.
- * Expects `FIREBASE_ADMIN_SDK_KEY` env var to contain base64-encoded service account JSON.
+ * Expects `FIREBASE_SERVICE_ACCOUNT` env var to contain base64-encoded service account JSON.
  */
 export function getFirebaseAdmin(): typeof admin {
   if (!admin.apps.length) {
     // Get Firebase Admin SDK key from environment
-    const serviceAccountKey = process.env.FIREBASE_ADMIN_SDK_KEY;
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT;
     
     if (!serviceAccountKey) {
-      throw new Error('Missing FIREBASE_ADMIN_SDK_KEY environment variable. Please add it to Vercel Environment Variables.');
+      throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable. Please add it to Vercel Environment Variables.');
     }
 
     let cred: any;
@@ -26,7 +26,7 @@ export function getFirebaseAdmin(): typeof admin {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('Firebase Admin SDK initialization error:', msg);
-      throw new Error(`Failed to parse FIREBASE_ADMIN_SDK_KEY: ${msg}`);
+      throw new Error(`Failed to parse FIREBASE_SERVICE_ACCOUNT: ${msg}`);
     }
 
     try {
