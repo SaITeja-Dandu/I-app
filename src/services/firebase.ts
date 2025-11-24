@@ -6,7 +6,6 @@
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
-  signInAnonymously,
   signInWithCustomToken,
   setPersistence,
   browserLocalPersistence,
@@ -70,7 +69,7 @@ export const initializeFirebase = async (): Promise<{
 
     logger.info('Firebase initialized successfully');
 
-    // Attempt authentication
+    // Check for initial auth token (e.g., from server-side rendering)
     const token =
       typeof (window as any).__initial_auth_token !== 'undefined'
         ? (window as any).__initial_auth_token
@@ -79,10 +78,8 @@ export const initializeFirebase = async (): Promise<{
     if (token) {
       await signInWithCustomToken(auth, token);
       logger.info('User authenticated with custom token');
-    } else {
-      await signInAnonymously(auth);
-      logger.info('User authenticated anonymously');
     }
+    // Do NOT sign in anonymously - let users stay unauthenticated until they explicitly sign up/login
 
     return { auth, db };
   } catch (error) {

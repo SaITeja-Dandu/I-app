@@ -107,7 +107,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
       </div>
 
       {/* Main Card */}
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-2xl">
         {/* Back Button */}
         {onBackToLanding && (
           <button

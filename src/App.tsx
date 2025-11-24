@@ -204,6 +204,9 @@ export const App: React.FC = () => {
       // Keep current screen if already on auth screen
       if (screen === 'auth') {
         setScreen('auth');
+      } else if (screen === 'landing') {
+        // Keep on landing page if already there
+        setScreen('landing');
       } else {
         // Default to landing page for unauthenticated users
         setScreen('landing');
@@ -509,12 +512,10 @@ export const App: React.FC = () => {
       case 'auth':
         return (
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gradient-mesh"><LoadingSpinner message="Loading..." size="lg" /></div>}>
-            <div className="min-h-screen bg-gradient-mesh px-4">
-              <AuthScreen 
-                onSelectUserType={handleUserTypeSelection}
-                onBackToLanding={() => setScreen('landing')}
-              />
-            </div>
+            <AuthScreen 
+              onSelectUserType={handleUserTypeSelection}
+              onBackToLanding={() => setScreen('landing')}
+            />
           </Suspense>
         );
 
@@ -618,17 +619,15 @@ export const App: React.FC = () => {
       case 'lobby':
         return (
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gradient-mesh"><LoadingSpinner message="Loading lobby..." size="lg" /></div>}>
-            <div className="min-h-screen bg-gradient-mesh px-4">
-              <LobbyScreen
-                profile={userProfile!}
-                history={interviewHistory}
-                onStartInterview={handleStartInterview}
-                onEditProfile={() => setScreen('setup')}
-                onBookInterview={() => setScreen('bookInterview')}
-                onViewDashboard={() => setScreen('interviewerDashboard')}
-                isLoading={isInterviewLoading}
-              />
-            </div>
+            <LobbyScreen
+              profile={userProfile!}
+              history={interviewHistory}
+              onStartInterview={handleStartInterview}
+              onEditProfile={() => setScreen('setup')}
+              onBookInterview={() => setScreen('bookInterview')}
+              onViewDashboard={() => setScreen('interviewerDashboard')}
+              isLoading={isInterviewLoading}
+            />
           </Suspense>
         );
 
