@@ -631,7 +631,6 @@ export const App: React.FC = () => {
                 });
                 setScreen('lobby');
               }}
-              onBack={() => setScreen('lobby')}
             />
           </Suspense>
         );
@@ -641,7 +640,6 @@ export const App: React.FC = () => {
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gradient-mesh"><LoadingSpinner message="Loading..." size="lg" /></div>}>
             <CandidateDashboardScreen
               currentUser={userProfile!}
-              onBack={() => setScreen('lobby')}
               onSubmitReview={(bookingId, interviewerId, interviewerName) => {
                 setReviewBookingId(bookingId);
                 setReviewInterviewerId(interviewerId);
@@ -706,7 +704,6 @@ export const App: React.FC = () => {
                   type: 'info',
                 });
               }}
-              onBack={() => setScreen('lobby')}
               onManageAvailability={() => setScreen('interviewerAvailability')}
               onViewEarnings={() => setScreen('interviewerEarnings')}
               onViewAnalytics={() => setScreen('interviewerAnalytics')}

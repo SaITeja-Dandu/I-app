@@ -14,7 +14,6 @@ import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react
 
 interface CandidateDashboardScreenProps {
   currentUser: UserProfile;
-  onBack: () => void;
   onSubmitReview?: (bookingId: string, interviewerId: string, interviewerName: string) => void;
   onViewSavedInterviewers?: () => void;
   onViewHistory?: () => void;
@@ -25,7 +24,6 @@ type TabType = 'upcoming' | 'completed' | 'all';
 
 export const CandidateDashboardScreen: React.FC<CandidateDashboardScreenProps> = ({
   currentUser,
-  onBack,
   onSubmitReview,
   onViewSavedInterviewers,
   onViewHistory,

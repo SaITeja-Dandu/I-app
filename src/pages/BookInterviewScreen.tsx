@@ -24,13 +24,11 @@ const logger = createLogger('book-interview-screen');
 
 interface BookInterviewScreenProps {
   onBookingCreated: (bookingId: string) => void;
-  onBack: () => void;
   currentUser: UserProfile;
 }
 
 export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
   onBookingCreated,
-  onBack,
   currentUser,
 }) => {
   const [interviewers, setInterviewers] = useState<InterviewerWithProfile[]>([]);

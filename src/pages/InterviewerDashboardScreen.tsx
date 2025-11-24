@@ -19,7 +19,6 @@ const logger = createLogger('interviewer-dashboard');
 interface InterviewerDashboardScreenProps {
   currentUser: UserProfile;
   onStartInterview: (bookingId: string) => void;
-  onBack: () => void;
   onManageAvailability?: () => void;
   onViewEarnings?: () => void;
   onViewAnalytics?: () => void;
@@ -32,7 +31,6 @@ type TabType = 'pending' | 'upcoming' | 'completed';
 export const InterviewerDashboardScreen: React.FC<InterviewerDashboardScreenProps> = ({
   currentUser,
   onStartInterview,
-  onBack,
   onManageAvailability,
   onViewEarnings,
   onViewAnalytics,
