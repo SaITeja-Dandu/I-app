@@ -16,6 +16,7 @@ import { initializeFirebase, getFirebaseInstances } from './services/firebase';
 import {
   initializeFirestoreService,
   getFirestoreService,
+  waitForFirestoreService,
 } from './services/firestore';
 import { initializeReminderScheduler, stopReminderScheduler } from './services/reminder-scheduler';
 import { initializeInterviewerService } from './services/interviewer';
@@ -142,13 +143,34 @@ export const App: React.FC = () => {
       const loadProfile = async () => {
         try {
           const firestoreService = getFirestoreService();
-          const profile = await firestoreService.getUserProfile(userId);
+          let profile = await firestoreService.getUserProfile(userId);
+          
           logger.info({ 
             hasProfile: !!profile, 
             userType: profile?.userType,
             hasRole: !!profile?.role,
-            hasInterviewerProfile: !!profile?.interviewerProfile
+            hasInterviewerProfile: !!profile?.interviewerProfile,
+            hasEmail: !!profile?.email,
+            hasName: !!profile?.name
           }, 'Profile loaded from Firestore');
+          
+          // If profile doesn't have email, get it from Firebase Auth
+          if (profile && !profile.email) {
+            const { auth } = getFirebaseInstances();
+            const firebaseUser = auth.currentUser;
+            if (firebaseUser?.email) {
+              console.log('[App] Profile missing email, adding from Auth:', firebaseUser.email);
+              profile = { ...profile, email: firebaseUser.email };
+              // Save the email back to Firestore
+              try {
+                await firestoreService.saveUserProfile(userId, profile);
+                logger.info({ email: firebaseUser.email }, 'Email saved to Firestore');
+              } catch (saveErr) {
+                logger.warn({ error: saveErr }, 'Failed to save email to Firestore, continuing anyway');
+              }
+            }
+          }
+          
           setUserProfile(profile);
 
           // Subscribe to interview history
@@ -305,7 +327,9 @@ export const App: React.FC = () => {
       }
 
       try {
-        const firestoreService = getFirestoreService();
+        // Ensure Firestore service is initialized
+        const firestoreService = await waitForFirestoreService();
+        
         const updatedProfile: UserProfile = {
           ...userProfile,
           uid: userId,
@@ -314,11 +338,12 @@ export const App: React.FC = () => {
           createdAt: userProfile?.createdAt || new Date(),
           updatedAt: new Date(),
           email: userProfile?.email,
+          name: userProfile?.name, // IMPORTANT: Preserve name from signup
         } as UserProfile;
 
         await firestoreService.saveUserProfile(userId, updatedProfile);
         setUserProfile(updatedProfile);
-        logger.info({ userType }, 'User type selected');
+        logger.info({ userType, name: updatedProfile.name }, 'User type selected with name preserved');
       } catch (error) {
         logger.error({ error }, 'Failed to save user type');
         showAlert({
@@ -341,7 +366,9 @@ export const App: React.FC = () => {
       }
 
       try {
-        const firestoreService = getFirestoreService();
+        // Ensure Firestore service is initialized
+        const firestoreService = await waitForFirestoreService();
+        
         const fullProfile: UserProfile = {
           ...userProfile,
           id: userId,
@@ -351,6 +378,8 @@ export const App: React.FC = () => {
           createdAt: userProfile?.createdAt || new Date(),
           updatedAt: new Date(),
           email: profileData.email || userProfile?.email,
+          name: profileData.name || userProfile?.name, // IMPORTANT: Preserve name
+          phoneNumber: profileData.phoneNumber || userProfile?.phoneNumber, // IMPORTANT: Preserve phone
           resumeUrl: profileData.resumeUrl || userProfile?.resumeUrl,
           userType: profileData.userType || userProfile?.userType || 'candidate',
           interviewerProfile: profileData.interviewerProfile || userProfile?.interviewerProfile,
@@ -390,6 +419,9 @@ export const App: React.FC = () => {
 
   const handleInterviewerProfileSave = useCallback(
     async (interviewerProfile: any) => {
+      console.log('[App] handleInterviewerProfileSave called with:', { hasName: !!interviewerProfile?.__name, nameValue: interviewerProfile?.__name });
+      console.log('[App] Current userProfile state:', { name: userProfile?.name, email: userProfile?.email, phoneNumber: userProfile?.phoneNumber, userType: userProfile?.userType });
+      
       if (!userId || !userProfile) {
         showAlert({
           message: 'User not authenticated',
@@ -399,17 +431,32 @@ export const App: React.FC = () => {
       }
 
       try {
-        const firestoreService = getFirestoreService();
+        // Ensure Firestore service is initialized
+        const firestoreService = await waitForFirestoreService();
+        
+        // Extract name from the profile object if it was attached
+        const nameFromForm = (interviewerProfile as any)?.__name;
+        console.log('[App] Extracted name from form:', nameFromForm, 'Type:', typeof nameFromForm);
+        delete (interviewerProfile as any).__name; // Remove the temporary name field
+        
+        // Use name from form, or fall back to existing name in userProfile
+        const finalName = nameFromForm || userProfile?.name;
+        const finalEmail = userProfile?.email;
+        const finalPhone = userProfile?.phoneNumber;
+        console.log('[App] Final values to save:', { name: finalName, email: finalEmail, phone: finalPhone });
+        
         const updatedProfile: UserProfile = {
           ...userProfile,
+          ...(finalName && { name: finalName }), // Save name to UserProfile (prefer form name, fallback to existing)
           interviewerProfile,
           updatedAt: new Date(),
         };
 
+        console.log('[App] Full updatedProfile before save:', { name: updatedProfile.name, email: updatedProfile.email, phoneNumber: updatedProfile.phoneNumber, userType: updatedProfile.userType, hasInterviewerProfile: !!updatedProfile.interviewerProfile });
         await firestoreService.saveUserProfile(userId, updatedProfile);
         setUserProfile(updatedProfile);
         
-        logger.info({}, 'Interviewer profile saved successfully');
+        logger.info({}, 'Interviewer profile saved successfully', { name: finalName, userType: 'interviewer' });
         
         showAlert({
           message: 'Interviewer profile saved successfully!',

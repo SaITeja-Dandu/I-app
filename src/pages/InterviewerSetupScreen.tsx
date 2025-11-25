@@ -43,11 +43,18 @@ const SPECIALIZATIONS = [
   'Behavioral Interviews',
 ];
 
+const SKILL_SUGGESTIONS = [
+  'React', 'TypeScript', 'Node.js', 'Python', 'Java', 'AWS', 'Docker',
+  'Kubernetes', 'SQL', 'JavaScript', 'Vue.js', 'Angular', 'GraphQL', 'MongoDB',
+  'PostgreSQL', 'Redis', 'Git', 'REST APIs', 'Microservices', 'CI/CD',
+];
+
 export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
   onComplete,
   onBack,
 }) => {
   const [formData, setFormData] = useState({
+    name: '',
     yearsOfExperience: '',
     companyName: '',
     currentTitle: '',
@@ -56,6 +63,8 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
   });
 
   const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [customSkill, setCustomSkill] = useState('');
   const [availability, setAvailability] = useState<AvailabilitySlot[]>(
     DAYS_OF_WEEK.map(day => ({
       day,
@@ -81,6 +90,21 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
     );
   };
 
+  const addSkill = (skill: string) => {
+    const trimmed = skill.trim();
+    if (trimmed && !skills.includes(trimmed) && skills.length < 20) {
+      setSkills(prev => [...prev, trimmed]);
+      setCustomSkill('');
+      if (errors.skills) {
+        setErrors(prev => ({ ...prev, skills: '' }));
+      }
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    setSkills(prev => prev.filter(s => s !== skillToRemove));
+  };
+
   const toggleDayAvailability = (index: number) => {
     setAvailability(prev =>
       prev.map((slot, i) => (i === index ? { ...slot, enabled: !slot.enabled } : slot))
@@ -95,6 +119,10 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
 
     if (!formData.yearsOfExperience || isNaN(Number(formData.yearsOfExperience))) {
       newErrors.yearsOfExperience = 'Please enter valid years of experience';
@@ -118,6 +146,10 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
       newErrors.specializations = 'Select at least one specialization';
     }
 
+    if (skills.length === 0) {
+      newErrors.skills = 'Add at least one technical skill';
+    }
+
     const hasAvailability = availability.some(slot => slot.enabled);
     if (!hasAvailability) {
       newErrors.availability = 'Set availability for at least one day';
@@ -134,6 +166,7 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    console.log('[InterviewerSetupScreen] Form submitted with name:', formData.name);
     setIsSubmitting(true);
     try {
       const interviewerProfile: Partial<InterviewerProfile> = {
@@ -141,6 +174,7 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
         companyName: formData.companyName,
         currentTitle: formData.currentTitle,
         specializations: selectedSpecializations,
+        skills: skills,
         bio: formData.bio,
         linkedInUrl: formData.linkedinUrl || undefined,
         availability: availability
@@ -154,15 +188,19 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
               dayOfWeek: dayMap[slot.day] ?? 1,
               startTime: slot.startTime,
               endTime: slot.endTime,
-              timezone: 'UTC',
+              timezone: 'Asia/Kolkata',
             };
           }),
         hourlyRate: 0, // Can be set later in settings
         totalInterviews: 0,
         rating: 0,
         verified: false,
+        isActive: true, // CRITICAL: Enable interviewer visibility in booking search
       };
 
+      // Pass the name along with the profile
+      (interviewerProfile as any).__name = formData.name;
+      console.log('[InterviewerSetupScreen] Calling onComplete with name:', formData.name);
       await onComplete(interviewerProfile);
     } catch (error) {
       console.error('Error saving interviewer profile:', error);
@@ -318,13 +356,103 @@ export const InterviewerSetupScreen: React.FC<InterviewerSetupScreenProps> = ({
               </div>
             </div>
 
+            {/* Technical Skills Section */}
+            <div className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                💻 Technical Skills
+              </h2>
+              <p className="text-gray-600 mb-4">Add the technical skills and technologies you're proficient in</p>
+              {errors.skills && (
+                <p className="text-red-500 text-sm mb-4">{errors.skills}</p>
+              )}
+              
+              {/* Suggested Skills */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Popular Skills - Click to Add</p>
+                <div className="flex flex-wrap gap-2">
+                  {SKILL_SUGGESTIONS.map((skill) => (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => addSkill(skill)}
+                      disabled={skills.includes(skill) || skills.length >= 20}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                        skills.includes(skill)
+                          ? 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border-2 border-blue-300 cursor-default'
+                          : skills.length >= 20
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                      }`}
+                    >
+                      {skills.includes(skill) ? '✓' : '+'} {skill}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Skill Input */}
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="Add custom skill (e.g., Terraform, Redis)..."
+                  value={customSkill}
+                  onChange={(e) => setCustomSkill(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSkill(customSkill);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2.5 text-sm rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => addSkill(customSkill)}
+                  disabled={!customSkill.trim() || skills.length >= 20}
+                  className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-200"
+                >
+                  Add
+                </button>
+              </div>
+
+              {/* Selected Skills */}
+              {skills.length > 0 && (
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                  <p className="text-xs font-semibold text-gray-600 uppercase mb-3">
+                    Your Selected Skills ({skills.length}/20)
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((skill) => (
+                      <div
+                        key={skill}
+                        className="group relative px-4 py-2 bg-white rounded-full border-2 border-blue-200 flex items-center gap-2"
+                      >
+                        <span className="text-sm font-medium text-gray-800">{skill}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(skill)}
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          title="Remove skill"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Availability Section */}
             <div className="mb-10">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 📅 Weekly Availability
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-2">
                 Set your general availability. You can adjust this anytime in settings.
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                All times use <span className="font-semibold">India Standard Time (IST, UTC+05:30)</span>.
               </p>
               {errors.availability && (
                 <p className="text-red-500 text-sm mb-4">{errors.availability}</p>

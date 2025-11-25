@@ -81,12 +81,12 @@ export const useAuth = () => {
     }
   }, []);
 
-  const signup = useCallback(async (email: string, password: string) => {
+  const signup = useCallback(async (email: string, password: string, name?: string, phoneNumber?: string) => {
     try {
       const resp = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, name, phoneNumber }),
       });
 
       const data = await resp.json();

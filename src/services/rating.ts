@@ -198,8 +198,13 @@ export class RatingService {
 
       logger.info({ interviewerId, count: reviews.length }, 'Fetched interviewer reviews');
       return reviews;
-    } catch (error) {
-      logger.error({ error, interviewerId }, 'Failed to get interviewer reviews');
+    } catch (error: any) {
+      // Suppress index-not-created errors gracefully—they're non-blocking
+      if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
+        logger.debug({ interviewerId }, 'Review index not yet created (non-critical)');
+      } else {
+        logger.error({ error, interviewerId }, 'Failed to get interviewer reviews');
+      }
       return [];
     }
   }

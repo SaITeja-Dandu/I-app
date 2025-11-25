@@ -19,6 +19,7 @@ export interface TimeSlot {
 export interface InterviewerProfile {
   yearsOfExperience: number;
   specializations: string[]; // e.g., ['Frontend', 'Backend', 'System Design']
+  skills?: string[]; // Technical skills and technologies
   companyName?: string;
   currentTitle?: string;
   bio?: string;
@@ -28,6 +29,7 @@ export interface InterviewerProfile {
   rating?: number; // Average rating from candidates (0-5)
   totalInterviews?: number; // Number of interviews conducted
   verified?: boolean; // Platform verification status
+  isActive?: boolean; // Whether interviewer is visible in booking search (default: true)
 }
 
 export interface CandidateProfile {
@@ -42,6 +44,8 @@ export interface UserProfile {
   userType: UserType; // NEW
   role: string;
   skills: string[];
+  name?: string; // User's display name
+  phoneNumber?: string; // User's phone number
   createdAt: Date;
   updatedAt: Date;
   email?: string;

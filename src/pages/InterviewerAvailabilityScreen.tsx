@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAvailabilityService, type AvailabilitySlot, type DayAvailability } from '../services/availability';
+import { getFirestoreService } from '../services/firestore';
 import { getAuth } from 'firebase/auth';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -31,18 +32,7 @@ const NUMBER_TO_DAY: Record<number, string> = {
   5: 'Friday',
   6: 'Saturday',
 };
-const TIMEZONES = [
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Los_Angeles',
-  'Europe/London',
-  'Europe/Paris',
-  'Asia/Tokyo',
-  'Asia/Dubai',
-  'Asia/Kolkata',
-  'Australia/Sydney',
-];
+// Timezone selection removed – currently fixed to India (IST)
 
 interface TimeSlotInput {
   startTime: string;
@@ -61,7 +51,8 @@ export const InterviewerAvailabilityScreen: React.FC<InterviewerAvailabilityScre
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [timezone, setTimezone] = useState('America/New_York');
+  // Fixed timezone for all availability (India Standard Time)
+  const timezone = 'Asia/Kolkata';
   const [existingSlots, setExistingSlots] = useState<AvailabilitySlot[]>([]);
   
   // Set page title when component mounts
@@ -100,6 +91,52 @@ export const InterviewerAvailabilityScreen: React.FC<InterviewerAvailabilityScre
         setLoading(true);
         setError(null);
         
+        // Ensure interviewer profile exists (auto-create if needed)
+        const firestoreService = getFirestoreService();
+        let currentProfile = await firestoreService.getUserProfile(userId);
+        
+        // If no profile exists at all, create a minimal one
+        if (!currentProfile) {
+          logger.info({ userId }, 'No profile found, creating minimal profile for discoverability');
+          const minimalProfile: any = {
+            uid: userId,
+            email: 'Interviewer',
+            userType: 'interviewer',
+            role: 'Interviewer',
+            skills: [],
+            interviewerProfile: {
+              yearsOfExperience: 0,
+              specializations: [],
+              skills: [],
+              bio: 'Interviewer',
+              availability: [],
+              isActive: true,
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          await firestoreService.saveUserProfile(userId, minimalProfile);
+          logger.info({ userId }, 'Minimal interviewer profile created');
+          currentProfile = minimalProfile;
+        }
+        // If profile exists but no interviewerProfile, add one
+        else if (!currentProfile.interviewerProfile) {
+          logger.info({ userId }, 'Profile exists but no interviewerProfile, adding it for discoverability');
+          const updatedProfile = {
+            ...currentProfile,
+            interviewerProfile: {
+              yearsOfExperience: 0,
+              specializations: [],
+              skills: [],
+              bio: 'Interviewer',
+              availability: [],
+              isActive: true,
+            },
+          };
+          await firestoreService.saveUserProfile(userId, updatedProfile);
+          logger.info({ userId }, 'Interviewer profile added to existing profile');
+        }
+        
         const availabilityService = getAvailabilityService();
         const slots = await availabilityService.getInterviewerAvailability(userId);
         logger.info({ slotsCount: slots.length }, 'Loaded existing availability');
@@ -134,9 +171,7 @@ export const InterviewerAvailabilityScreen: React.FC<InterviewerAvailabilityScre
               })),
             };
             // Use timezone from first slot
-            if (daySlots[0].timezone) {
-              setTimezone(daySlots[0].timezone);
-            }
+            // Ignoring stored timezone – always using Asia/Kolkata
           }
         });
 
@@ -293,9 +328,40 @@ export const InterviewerAvailabilityScreen: React.FC<InterviewerAvailabilityScre
           })),
         }));
 
-      logger.debug({ enabledDays: schedule.length, timezone }, 'Converting schedule');
+      logger.debug({ enabledDays: schedule.length, timezone }, 'Converting schedule (fixed Asia/Kolkata)');
       const availabilityService = getAvailabilityService();
+      
+      logger.info({ userId, scheduleLength: schedule.length }, '🔵 [AVAILABILITY] Starting to set weekly schedule');
       await availabilityService.setWeeklySchedule(userId, schedule, timezone);
+      logger.info({ userId }, '🟢 [AVAILABILITY] Weekly schedule set successfully');
+
+      // Ensure interviewer profile exists and userType is set so they appear in listings
+      const firestoreService = getFirestoreService();
+      logger.info({ userId }, '🔵 [PROFILE] Loading current profile from Firestore');
+      const currentProfile = await firestoreService.getUserProfile(userId);
+      logger.info({ userId, hasProfile: !!currentProfile, profileUserType: currentProfile?.userType }, '🔵 [PROFILE] Current profile loaded');
+      
+      // CRITICAL: Always ensure userType is set to 'interviewer' - this is required for root document creation
+      // which is what booking search queries on
+      const updatedProfile = {
+        ...(currentProfile || {}),
+        uid: userId,
+        id: userId,
+        userType: 'interviewer',
+        email: currentProfile?.email,
+        createdAt: currentProfile?.createdAt || new Date(),
+        updatedAt: new Date(),
+        interviewerProfile: currentProfile?.interviewerProfile || {
+          yearsOfExperience: 0,
+          specializations: [],
+          skills: [],
+          bio: 'Interviewer',
+        },
+      };
+      
+      logger.info({ userId, profileToSave: JSON.stringify({ userType: updatedProfile.userType, hasInterviewerProfile: !!updatedProfile.interviewerProfile }) }, '🔵 [PROFILE] Saving profile with userType=interviewer');
+      await firestoreService.saveUserProfile(userId, updatedProfile);
+      logger.info({ userId }, '🟢 [PROFILE] Profile saved successfully with userType=interviewer');
 
       setSuccess('Your availability has been saved successfully!');
       logger.info({ daysCount: schedule.length, timezone }, 'Saved weekly schedule');
@@ -375,27 +441,12 @@ export const InterviewerAvailabilityScreen: React.FC<InterviewerAvailabilityScre
           </div>
         )}
 
-        {/* Timezone Selector */}
+        {/* Fixed Timezone Notice */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/20 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">Timezone</h2>
-              <p className="text-sm text-gray-600">
-                All times will be displayed in this timezone
-              </p>
-            </div>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              {TIMEZONES.map(tz => (
-                <option key={tz} value={tz}>
-                  {tz.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-          </div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Timezone</h2>
+          <p className="text-sm text-gray-600">
+            All times use <span className="font-semibold">India Standard Time (IST, UTC+05:30)</span>.
+          </p>
         </div>
 
         {/* Weekly Schedule */}

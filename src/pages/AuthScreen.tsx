@@ -13,6 +13,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [name, setName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [userType, setUserType] = useState<UserType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,6 +75,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
       return;
     }
 
+    if (mode === 'signup' && !name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+
+    if (mode === 'signup' && !phoneNumber.trim()) {
+      setError('Please enter your phone number');
+      return;
+    }
+
     if (mode === 'signup' && !userType) {
       setError('Please select whether you are a candidate or interviewer');
       return;
@@ -81,7 +93,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
     setLoading(true);
     try {
       if (mode === 'signup') {
-        await signup(email, password);
+        await signup(email, password, name, phoneNumber);
         // Pass user type to parent for profile creation
         if (onSelectUserType && userType) {
           onSelectUserType(userType);
@@ -192,6 +204,42 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
                 />
               </div>
             </div>
+
+            {/* Name Input (Signup only) */}
+            {mode === 'signup' && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <span>👤</span> Full Name
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-300 bg-white/50"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Phone Number Input (Signup only) */}
+            {mode === 'signup' && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <span>📱</span> Phone Number
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-300 bg-white/50"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Password Input */}
             <div className="space-y-2">
@@ -307,6 +355,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSelectUserType, onBack
                   setMode(mode === 'login' ? 'signup' : 'login');
                   setError(null);
                   setConfirm('');
+                  setName('');
+                  setPhoneNumber('');
                 }}
                 className="text-blue-600 hover:text-purple-600 font-semibold transition-colors"
               >

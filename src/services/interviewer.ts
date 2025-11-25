@@ -23,6 +23,7 @@ const logger = createLogger('interviewer-service');
 export interface InterviewerWithProfile {
   id: string;
   email?: string;
+  name?: string;
   userType: 'interviewer';
   role: string;
   skills: string[];
@@ -58,10 +59,16 @@ export interface InterviewerSearchResult {
 
 export class InterviewerService {
   private db: Firestore;
+  private appId: string;
 
   constructor(db: Firestore) {
     this.db = db;
-    logger.info('InterviewerService initialized');
+    this.appId =
+      import.meta.env.VITE_APP_ID ||
+      (typeof (window as any).__app_id !== 'undefined'
+        ? (window as any).__app_id
+        : 'interview-navigator');
+    logger.info({ appId: this.appId }, '🔵 [INTERVIEWER-SERVICE] Service initialized with appId');
   }
 
   /**
@@ -73,9 +80,11 @@ export class InterviewerService {
     lastDocument?: DocumentSnapshot
   ): Promise<InterviewerSearchResult> {
     try {
+      logger.info({ pageSize }, '🔵 [INTERVIEWER-SEARCH] Starting getAvailableInterviewers');
+      
       const usersRef = collection(
         this.db,
-        `artifacts/${FIRESTORE_PATHS.APP_ID}/${FIRESTORE_PATHS.USERS}`
+        `artifacts/${this.appId}/${FIRESTORE_PATHS.USERS}`
       );
 
       // Build base query for interviewers
@@ -91,39 +100,130 @@ export class InterviewerService {
       }
 
       const snapshot = await getDocs(q);
-      logger.info({ count: snapshot.size }, 'Fetched interviewer profiles');
+      logger.info({ count: snapshot.size }, '🔵 [INTERVIEWER-SEARCH] Fetched interviewer root documents via query');
+
+      // Debug: Log all root documents found
+      if (snapshot.size === 0) {
+        logger.warn({}, '🟡 [INTERVIEWER-SEARCH] No interviewer root documents found - checking if any users exist in database');
+        // Try to find ANY users to debug
+        const allUsersQuery = query(collection(this.db, `artifacts/${this.appId}/${FIRESTORE_PATHS.USERS}`));
+        const allUsers = await getDocs(allUsersQuery);
+        logger.debug({ 
+          totalUsersFound: allUsers.size,
+          userIds: allUsers.docs.map(d => ({ id: d.id, userType: d.data().userType }))
+        }, 'All users in database');
+      }
 
       // Convert documents to profiles
       let interviewers: InterviewerWithProfile[] = [];
       const docs: DocumentSnapshot[] = [];
 
+      logger.info({ rootDocCount: snapshot.docs.length }, '🔵 [INTERVIEWER-SEARCH] Processing root documents');
+      
       for (const docSnap of snapshot.docs) {
-        const profileDoc = await getDoc(
-          doc(docSnap.ref, 'profile/settings')
-        );
-
-        if (profileDoc.exists()) {
-          const data = profileDoc.data();
-          
-          // Only include active interviewers with complete profiles
-          if (
-            data.interviewerProfile &&
-            data.interviewerProfile.isActive !== false
-          ) {
-            const interviewer: InterviewerWithProfile = {
-              id: docSnap.id,
-              email: data.email,
-              userType: 'interviewer',
-              role: data.role || '',
-              skills: data.skills || [],
-              interviewerProfile: data.interviewerProfile,
-              createdAt: data.createdAt?.toDate() || new Date(),
-              updatedAt: data.updatedAt?.toDate() || new Date(),
-            };
-
-            interviewers.push(interviewer);
-            docs.push(docSnap);
+        try {
+          logger.debug({ userId: docSnap.id }, '🔵 [INTERVIEWER-SEARCH] Loading nested profile for root doc');
+          const profileDoc = await getDoc(
+            doc(docSnap.ref, 'profile/settings')
+          );
+          if (profileDoc.exists()) {
+            const data = profileDoc.data();
+            console.log('[InterviewerService] Profile data loaded:', { userId: docSnap.id, name: data.name, email: data.email, hasInterviewerProfile: !!data.interviewerProfile });
+            logger.debug({ userId: docSnap.id, hasInterviewerProfile: !!data.interviewerProfile, isActive: data.interviewerProfile?.isActive }, '🔵 [INTERVIEWER-SEARCH] Profile exists');
+            
+            if (data.interviewerProfile && data.interviewerProfile.isActive !== false) {
+              console.log('[InterviewerService] Creating InterviewerWithProfile:', { id: docSnap.id, name: data.name, email: data.email });
+              logger.debug({ userId: docSnap.id }, '🟢 [INTERVIEWER-SEARCH] Adding interviewer to results');
+              interviewers.push({
+                id: docSnap.id,
+                email: data.email,
+                name: data.name,
+                userType: 'interviewer',
+                role: data.role || '',
+                skills: data.skills || [],
+                interviewerProfile: data.interviewerProfile,
+                createdAt: data.createdAt?.toDate() || new Date(),
+                updatedAt: data.updatedAt?.toDate() || new Date(),
+              });
+              docs.push(docSnap);
+            }
+          } else {
+            logger.debug({ userId: docSnap.id }, '🟡 [INTERVIEWER-SEARCH] No nested profile document found');
           }
+        } catch (err) {
+          logger.warn({ error: err, userId: docSnap.id }, '🔴 [INTERVIEWER-SEARCH] Failed to load nested profile for root doc');
+        }
+      }
+
+      logger.info({ foundCount: interviewers.length }, '🟢 [INTERVIEWER-SEARCH] Processed all root documents');
+
+      // Fallback: if no interviewers found via root docs, search profile documents directly
+      // This handles case where interviewers exist but root documents weren't created
+      if (interviewers.length === 0) {
+        logger.warn({}, '🟡 [INTERVIEWER-SEARCH] No interviewers found via root docs - attempting fallback search in profile documents');
+        try {
+          const profilesCollection = collection(
+            this.db,
+            `artifacts/${this.appId}/${FIRESTORE_PATHS.USERS}`
+          );
+          const allUsersQuery = query(profilesCollection);
+          const allUsersDocs = await getDocs(allUsersQuery);
+          
+          logger.info({ 
+            totalUserDocs: allUsersDocs.size,
+            userIds: allUsersDocs.docs.map(d => d.id)
+          }, '🔵 [INTERVIEWER-SEARCH-FALLBACK] Checking all user documents');
+
+          if (allUsersDocs.size === 0) {
+            logger.warn({}, '🟡 [INTERVIEWER-SEARCH-FALLBACK] No user root documents found - database may be empty');
+          } else {
+            logger.info({ count: allUsersDocs.size }, '🔵 [INTERVIEWER-SEARCH-FALLBACK] Found user root documents, checking profiles...');
+          }
+
+          for (const userDoc of allUsersDocs.docs) {
+            try {
+              logger.debug({ userId: userDoc.id }, '🔵 [INTERVIEWER-SEARCH-FALLBACK] Processing user');
+              
+              // Get the nested profile document which actually has the user data
+              const profileRef = doc(this.db, `artifacts/${this.appId}/${FIRESTORE_PATHS.USERS}/${userDoc.id}/profile/settings`);
+              const profileDoc = await getDoc(profileRef);
+              
+              if (profileDoc.exists()) {
+                const data = profileDoc.data();
+                logger.debug({ userId: userDoc.id, userType: data.userType, hasInterviewerProfile: !!data.interviewerProfile, isActive: data.interviewerProfile?.isActive }, '🔵 [INTERVIEWER-SEARCH-FALLBACK] Profile data');
+                
+                // Look for interviewer profile - either userType is 'interviewer' OR has interviewerProfile with availability
+                if ((data.userType === 'interviewer' || (data.interviewerProfile && data.interviewerProfile.isActive !== false)) && data.interviewerProfile) {
+                  logger.info({ userId: userDoc.id }, '🟢 [INTERVIEWER-SEARCH-FALLBACK] Found interviewer profile - adding to results');
+                  interviewers.push({
+                    id: userDoc.id,
+                    email: data.email,
+                    name: data.name,
+                    userType: 'interviewer',
+                    role: data.role || '',
+                    skills: data.skills || [],
+                    interviewerProfile: data.interviewerProfile,
+                    createdAt: data.createdAt?.toDate() || new Date(),
+                    updatedAt: data.updatedAt?.toDate() || new Date(),
+                  });
+                } else {
+                  logger.debug({ userId: userDoc.id }, '🟡 [INTERVIEWER-SEARCH-FALLBACK] Profile exists but not an interviewer');
+                }
+              } else {
+                logger.debug({ userId: userDoc.id }, '🟡 [INTERVIEWER-SEARCH-FALLBACK] No nested profile document found');
+              }
+            } catch (err) {
+              logger.debug({ error: err, userId: userDoc.id }, '🔴 [INTERVIEWER-SEARCH-FALLBACK] Could not load profile for user');
+            }
+          }
+          
+          if (interviewers.length > 0) {
+            logger.info({ count: interviewers.length }, '🟢 [INTERVIEWER-SEARCH-FALLBACK] Found interviewers via fallback profile search');
+          } else {
+            logger.warn({}, '🔴 [INTERVIEWER-SEARCH-FALLBACK] Fallback search completed but found no interviewers');
+          }
+        } catch (fallbackError) {
+          logger.warn({ error: fallbackError }, '🔴 [INTERVIEWER-SEARCH-FALLBACK] Fallback profile search failed');
         }
       }
 
@@ -139,8 +239,8 @@ export class InterviewerService {
       const lastDoc = docs.length > 0 ? docs[docs.length - 1] : null;
 
       logger.info(
-        { filteredCount: interviewers.length, hasMore },
-        'Filtered interviewers'
+        { filteredCount: interviewers.length, hasMore, totalFound: interviewers.length },
+        '🟢 [INTERVIEWER-SEARCH] Search complete - returning results'
       );
 
       return {
@@ -161,7 +261,7 @@ export class InterviewerService {
     try {
       const profileRef = doc(
         this.db,
-        `artifacts/${FIRESTORE_PATHS.APP_ID}/${FIRESTORE_PATHS.USERS}/${interviewerId}/profile/settings`
+        `artifacts/${this.appId}/${FIRESTORE_PATHS.USERS}/${interviewerId}/profile/settings`
       );
 
       const profileDoc = await getDoc(profileRef);
@@ -181,6 +281,7 @@ export class InterviewerService {
       const interviewer: InterviewerWithProfile = {
         id: interviewerId,
         email: data.email,
+        name: data.name,
         userType: 'interviewer',
         role: data.role || '',
         skills: data.skills || [],
@@ -291,7 +392,7 @@ export class InterviewerService {
     try {
       const bookingsRef = collection(
         this.db,
-        `artifacts/${FIRESTORE_PATHS.APP_ID}/${FIRESTORE_PATHS.BOOKINGS}`
+        `artifacts/${this.appId}/${FIRESTORE_PATHS.BOOKINGS}`
       );
 
       const q = query(bookingsRef, where('interviewerId', '==', interviewerId));

@@ -256,17 +256,27 @@ export class AvailabilityService {
     timezone: string
   ): Promise<void> {
     try {
+      logger.info({ interviewerId, daysCount: schedule.length, timezone }, '🔵 [AVAILABILITY-BULK] Starting setWeeklySchedule');
+      
       // Delete existing recurring slots
       const existingSlots = await this.getInterviewerAvailability(interviewerId);
       const recurringSlots = existingSlots.filter((slot) => slot.isRecurring);
+      logger.info({ interviewerId, slotsToDelete: recurringSlots.length }, '🔵 [AVAILABILITY-BULK] Deleting existing recurring slots');
 
       for (const slot of recurringSlots) {
         await this.deleteAvailabilitySlot(slot.id);
       }
+      logger.info({ interviewerId }, '🟢 [AVAILABILITY-BULK] Deleted all existing recurring slots');
 
       // Create new recurring slots
+      let slotCount = 0;
       for (const day of schedule) {
+        logger.debug({ interviewerId, dayOfWeek: day.dayOfWeek, slots: day.slots.length }, '🔵 [AVAILABILITY-BULK] Processing day');
+        
         for (const timeSlot of day.slots) {
+          slotCount++;
+          logger.debug({ interviewerId, dayOfWeek: day.dayOfWeek, startTime: timeSlot.startTime, endTime: timeSlot.endTime }, '🔵 [AVAILABILITY-BULK] Creating slot');
+          
           await this.setAvailabilitySlot({
             interviewerId,
             dayOfWeek: day.dayOfWeek,
@@ -279,9 +289,9 @@ export class AvailabilityService {
         }
       }
 
-      logger.info({ interviewerId, daysCount: schedule.length }, 'Weekly schedule updated');
+      logger.info({ interviewerId, totalSlotsCreated: slotCount }, '🟢 [AVAILABILITY-BULK] Weekly schedule updated - all slots created');
     } catch (error) {
-      logger.error({ error, interviewerId }, 'Failed to set weekly schedule');
+      logger.error({ error, interviewerId }, '🔴 [AVAILABILITY-BULK] Failed to set weekly schedule');
       throw new Error('Failed to update weekly schedule');
     }
   }

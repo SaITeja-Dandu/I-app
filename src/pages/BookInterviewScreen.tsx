@@ -44,16 +44,26 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
   const [interviewerRatings, setInterviewerRatings] = useState<Record<string, { rating: number; count: number }>>({});
   const [showPayment, setShowPayment] = useState(false);
   const [pendingBookingData, setPendingBookingData] = useState<any>(null);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
 
   // Fetch real interviewers from Firestore
   useEffect(() => {
     const fetchInterviewers = async () => {
+      logger.info({}, '🔵 [BOOKING-SCREEN] Starting to fetch interviewers');
       setIsLoading(true);
       try {
         const interviewerService = getInterviewerService();
+        logger.info({}, '🔵 [BOOKING-SCREEN] Calling getAvailableInterviewers');
         const result = await interviewerService.getAvailableInterviewers({}, 50);
         
-        logger.info({ count: result.interviewers.length }, 'Loaded interviewers');
+        logger.info({ count: result.interviewers.length }, '🟢 [BOOKING-SCREEN] Loaded interviewers - count: ' + result.interviewers.length);
+        
+        if (result.interviewers.length === 0) {
+          logger.warn({}, '🟡 [BOOKING-SCREEN] No interviewers found! This is the issue.');
+        } else {
+          logger.info({ interviewerIds: result.interviewers.map(i => i.id) }, '🟢 [BOOKING-SCREEN] Interviewers found: ' + result.interviewers.map(i => i.id).join(', '));
+        }
+        
         setInterviewers(result.interviewers);
         setFilteredInterviewers(result.interviewers);
         
@@ -76,8 +86,9 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
         }
         
         setInterviewerRatings(ratings);
+        logger.info({}, '🟢 [BOOKING-SCREEN] Fetch complete');
       } catch (error) {
-        logger.error({ error }, 'Error fetching interviewers');
+        logger.error({ error }, '🔴 [BOOKING-SCREEN] Error fetching interviewers');
         console.error('Error fetching interviewers:', error);
         // Fallback to empty array on error
         setInterviewers([]);
@@ -112,8 +123,26 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
     setFilteredInterviewers(filtered);
   }, [selectedSpecialization, minExperience, interviewers]);
 
+  // Clear booking state when interviewer changes
+  useEffect(() => {
+    if (selectedInterviewer) {
+      setSelectedDate('');
+      setSelectedTime('');
+      setAvailableTimeSlots([]);
+    }
+  }, [selectedInterviewer?.id]);
+
   const handleBookInterview = async () => {
-    if (!selectedInterviewer || !selectedDate || !selectedTime) return;
+    if (!selectedInterviewer || !selectedDate || !selectedTime) {
+      alert('Please select a date and time');
+      return;
+    }
+
+    // Validate that the selected time is within available slots
+    if (!isTimeSlotAvailable(selectedDate, selectedTime)) {
+      alert('The selected time is not available. Please choose from the suggested time slots.');
+      return;
+    }
 
     // Store booking data and show payment screen
     const scheduledDateTime = new Date(`${selectedDate}T${selectedTime}`);
@@ -187,6 +216,79 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
+  };
+
+  // Helper function to get available time slots for a selected date
+  const getAvailableTimeSlotsForDate = (date: string): string[] => {
+    if (!selectedInterviewer || !date) return [];
+
+    try {
+      const selectedDate = new Date(date);
+      const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+      // Get interviewer's availability for this day of week
+      const availability = selectedInterviewer.interviewerProfile.availability || [];
+      const dayAvailability = availability.find(slot => slot.dayOfWeek === dayOfWeek);
+
+      if (!dayAvailability) {
+        // Interviewer not available this day
+        return [];
+      }
+
+      // Generate time slots between start and end time (in 15-minute intervals)
+      const slots: string[] = [];
+      const [startHour, startMin] = dayAvailability.startTime.split(':').map(Number);
+      const [endHour, endMin] = dayAvailability.endTime.split(':').map(Number);
+
+      let currentHour = startHour;
+      let currentMin = startMin;
+
+      while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
+        const timeStr = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+        slots.push(timeStr);
+
+        // Add 15 minutes for next slot
+        currentMin += 15;
+        if (currentMin >= 60) {
+          currentMin -= 60;
+          currentHour += 1;
+        }
+      }
+
+      return slots;
+    } catch (error) {
+      console.error('Error calculating available time slots:', error);
+      return [];
+    }
+  };
+
+  // Check if selected time is within available time slots
+  const isTimeSlotAvailable = (date: string, time: string): boolean => {
+    const availableSlots = getAvailableTimeSlotsForDate(date);
+    return availableSlots.length > 0 && availableSlots.includes(time);
+  };
+
+  // Get day name and available hours for display
+  const getAvailabilityDisplay = (date: string): string => {
+    if (!selectedInterviewer || !date) return '';
+
+    try {
+      const selectedDate = new Date(date);
+      const dayOfWeek = selectedDate.getDay();
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      const availability = selectedInterviewer.interviewerProfile.availability || [];
+      const dayAvailability = availability.find(slot => slot.dayOfWeek === dayOfWeek);
+
+      if (!dayAvailability) {
+        return `${dayNames[dayOfWeek]} - Not available`;
+      }
+
+      const timezone = dayAvailability.timezone || 'UTC';
+      return `${dayNames[dayOfWeek]} - Available ${dayAvailability.startTime} to ${dayAvailability.endTime} (${timezone})`;
+    } catch (error) {
+      return '';
+    }
   };
 
   const allSpecializations = Array.from(
@@ -304,12 +406,16 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <h3 className="text-2xl font-bold text-gray-800">
-                                  {interviewer.email?.split('@')[0] || 'Unknown'}
+                                  {(() => {
+                                    const displayName = interviewer.name || interviewer.email?.split('@')[0] || 'Unknown';
+                                    console.log('[BookInterviewScreen] Displaying name for interviewer:', { id: interviewer.id, name: interviewer.name, email: interviewer.email, displayName });
+                                    return displayName;
+                                  })()}
                                 </h3>
                                 <FavoriteButton
                                   candidateId={currentUser.id}
                                   interviewerId={interviewer.id}
-                                  interviewerName={interviewer.email?.split('@')[0] || 'Unknown'}
+                                  interviewerName={interviewer.name || interviewer.email?.split('@')[0] || 'Unknown'}
                                   interviewerTitle={interviewer.interviewerProfile.title}
                                   interviewerCompany={interviewer.interviewerProfile.company}
                                   interviewerRating={interviewerRatings[interviewer.id]?.rating}
@@ -357,14 +463,39 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
                             )}
                           </div>
 
+                          {/* Technical Skills */}
+                          {interviewer.interviewerProfile.skills && interviewer.interviewerProfile.skills.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Technical Skills</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {interviewer.interviewerProfile.skills.slice(0, 5).map((skill) => (
+                                  <span 
+                                    key={skill}
+                                    className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                                {interviewer.interviewerProfile.skills.length > 5 && (
+                                  <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                                    +{interviewer.interviewerProfile.skills.length - 5} more
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Availability */}
-                          <div className="text-sm text-gray-600">
-                            <strong>Available:</strong>{' '}
-                            {interviewer.interviewerProfile.availability?.map((a: any) => {
-                              const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                              return days[a.dayOfWeek];
-                            }).join(', ')}
-                          </div>
+                          {interviewer.interviewerProfile.availability && interviewer.interviewerProfile.availability.length > 0 && (
+                            <div className="text-sm text-gray-600">
+                              <strong>Available:</strong>{' '}
+                              {interviewer.interviewerProfile.availability.map((a: any) => {
+                                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                const dayName = days[a.dayOfWeek];
+                                return `${dayName} ${a.startTime}-${a.endTime}`;
+                              }).join(', ')}
+                            </div>
+                          )}
                         </div>
 
                         {/* Booking Panel */}
@@ -398,7 +529,7 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
                 <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-3xl font-bold text-gray-800 mb-2">Book Interview</h2>
-                  <p className="text-gray-600">with {selectedInterviewer.email?.split('@')[0] || 'Unknown'}</p>
+                  <p className="text-gray-600">with {selectedInterviewer.name || selectedInterviewer.email?.split('@')[0] || 'Unknown'}</p>
                   </div>
                   <button
                     onClick={() => setSelectedInterviewer(null)}
@@ -416,10 +547,19 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
                   <input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setSelectedTime(''); // Reset time when date changes
+                      setAvailableTimeSlots(getAvailableTimeSlotsForDate(e.target.value));
+                    }}
                     min={getMinDate()}
                     className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                   />
+                  {selectedDate && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {getAvailabilityDisplay(selectedDate)}
+                    </p>
+                  )}
                 </div>
 
                 {/* Time Selection */}
@@ -427,12 +567,50 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Select Time *
                   </label>
-                  <input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                  />
+                  {selectedDate ? (
+                    availableTimeSlots.length > 0 ? (
+                      <>
+                        <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mb-3">
+                          {availableTimeSlots.map((timeSlot) => (
+                            <button
+                              key={timeSlot}
+                              onClick={() => setSelectedTime(timeSlot)}
+                              className={`
+                                px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                                ${
+                                  selectedTime === timeSlot
+                                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-blue-100'
+                                }
+                              `}
+                            >
+                              {timeSlot}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Click a time slot to select. Showing all available times for this day.
+                        </p>
+                      </>
+                    ) : (
+                      <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                        <p className="text-red-700 font-medium">
+                          ❌ Interviewer is not available on this date
+                        </p>
+                        <p className="text-sm text-red-600 mt-1">
+                          Please select a different date
+                        </p>
+                      </div>
+                    )
+                  ) : (
+                    <input
+                      type="time"
+                      disabled
+                      value={selectedTime}
+                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-400"
+                      placeholder="Select a date first"
+                    />
+                  )}
                 </div>
 
                 {/* Duration Selection */}
@@ -490,8 +668,9 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
                   </button>
                   <button
                     onClick={handleBookInterview}
-                    disabled={!selectedDate || !selectedTime || isBooking}
-                    className="flex-1 px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!selectedDate || !selectedTime || !isTimeSlotAvailable(selectedDate, selectedTime) || isBooking}
+                    className="flex-1 px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    title={!isTimeSlotAvailable(selectedDate, selectedTime) ? 'Selected time is not within interviewer availability' : ''}
                   >
                     {isBooking ? 'Booking...' : 'Continue to Payment'}
                   </button>
@@ -506,7 +685,7 @@ export const BookInterviewScreen: React.FC<BookInterviewScreenProps> = ({
               <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <PaymentCheckout
                   bookingId="pending"
-                  interviewerName={selectedInterviewer.email?.split('@')[0] || 'Unknown'}
+                  interviewerName={selectedInterviewer.name || selectedInterviewer.email?.split('@')[0] || 'Unknown'}
                   hourlyRate={selectedInterviewer.interviewerProfile.hourlyRate || 100}
                   durationMinutes={selectedDuration}
                   onPaymentSuccess={handlePaymentSuccess}

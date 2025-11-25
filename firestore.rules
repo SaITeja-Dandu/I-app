@@ -28,16 +28,16 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    function getArtifactUserData(userId) {
+      return get(/databases/$(database)/documents/artifacts/interview-navigator/users/$(userId)/profile/settings).data;
     }
     
     function isCandidate() {
-      return isAuthenticated() && getUserData().userType == 'candidate';
+      return isAuthenticated() && getArtifactUserData(request.auth.uid).userType == 'candidate';
     }
     
     function isInterviewer() {
-      return isAuthenticated() && getUserData().userType == 'interviewer';
+      return isAuthenticated() && getArtifactUserData(request.auth.uid).userType == 'interviewer';
     }
     
     function hasValidUserType() {
@@ -50,7 +50,35 @@ service cloud.firestore {
     }
     
     // ============================================
-    // Users Collection
+    // Artifacts Collection - New Structure
+    // ============================================
+    
+    match /artifacts/{appId}/users/{userId}/{document=**} {
+      // Allow authenticated users to read and write their own data
+      allow read: if isAuthenticated() && (
+        isOwner(userId) ||
+        // Allow reading interviewer profiles for browsing
+        get(/databases/$(database)/documents/artifacts/$(appId)/users/$(userId)/profile/settings).data.userType == 'interviewer'
+      );
+      
+      allow write: if isOwner(userId);
+    }
+
+    // ============================================
+    // Artifacts Availability Collection
+    // ============================================
+    
+    match /artifacts/{appId}/availability/{slotId} {
+      // Allow interviewers to read all slots (for discovering other interviewers' availability)
+      allow read: if isAuthenticated();
+      
+      // Allow any authenticated user to create/update availability slots
+      // (Production should restrict this to verified interviewers only)
+      allow write: if isAuthenticated();
+    }
+    
+    // ============================================
+    // Legacy Users Collection (for backward compatibility)
     // ============================================
     
     match /users/{userId} {
@@ -58,21 +86,19 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         isOwner(userId) || 
         // Allow reading interviewer profiles for browsing
-        get(/databases/$(database)/documents/users/$(userId)).data.userType == 'interviewer'
+        resource.data.userType == 'interviewer'
       );
       
       // Create: User can create their own profile during signup
       allow create: if isOwner(userId) && 
                        hasValidUserType() &&
                        request.resource.data.uid == userId &&
-                       request.resource.data.id == userId &&
                        request.resource.data.createdAt == request.time;
       
       // Update: User can only update their own profile
       allow update: if isOwner(userId) &&
-                       // Cannot change uid, id, userType, or createdAt
+                       // Cannot change uid or userType or createdAt
                        request.resource.data.uid == resource.data.uid &&
-                       request.resource.data.id == resource.data.id &&
                        request.resource.data.userType == resource.data.userType &&
                        request.resource.data.createdAt == resource.data.createdAt &&
                        request.resource.data.updatedAt == request.time;
